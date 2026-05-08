@@ -135,6 +135,9 @@ const corsOptions = {
             .filter(Boolean);
         
         const allowedOrigins = [
+            // Vercel production frontend
+            'https://sasta-engineer.vercel.app',
+
             'http://localhost:3030',
             'http://127.0.0.1:3030',
             'http://localhost:3000',
