@@ -13,6 +13,23 @@ require('dotenv').config({ path: path.join(__dirname, 'config.env'), override: f
 
 const connectDB = require('./config/database');
 
+// Startup env sanity checks (do not print secrets)
+(() => {
+    const required = ['PORT', 'JWT_SECRET', 'MONGODB_URI'];
+    const missing = required.filter((k) => !process.env[k]);
+
+    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || process.env.CORS_ORIGINS;
+    if (!clientUrl) {
+        console.warn('⚠️ CLIENT_URL / FRONTEND_URL / CORS_ORIGINS is not set. CORS may block your deployed frontend.');
+    }
+
+    if (missing.length) {
+        console.warn(`⚠️ Missing environment variables: ${missing.join(', ')}`);
+    } else {
+        console.log('✅ Required environment variables detected (values not shown)');
+    }
+})();
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');

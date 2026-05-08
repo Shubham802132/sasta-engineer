@@ -1,14 +1,46 @@
 const User = require('../models/user');
 const Fixer = require('../models/fixer');
 const OTP = require('../models/otp');
+const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const smsService = require('../utils/smsService');
+
+function getRefreshCookieMaxAgeMs() {
+    const raw = process.env.JWT_REFRESH_EXPIRE;
+    const days = Number.parseInt(raw, 10);
+    // Default to 7 days if missing/invalid
+    const safeDays = Number.isFinite(days) && days > 0 ? days : 7;
+    return safeDays * 24 * 60 * 60 * 1000;
+}
+
+function ensureAuthPrereqs(res) {
+    if (!process.env.JWT_SECRET) {
+        res.status(500).json({
+            success: false,
+            message: 'Server misconfigured: JWT_SECRET is not set'
+        });
+        return false;
+    }
+
+    // If Mongo is disconnected, login cannot query users reliably.
+    if (mongoose.connection.readyState !== 1) {
+        res.status(503).json({
+            success: false,
+            message: 'Database unavailable. Please try again shortly.'
+        });
+        return false;
+    }
+
+    return true;
+}
 
 // @desc    Register User
 // @route   POST /api/auth/register/user
 // @access  Public
 const registerUser = async (req, res) => {
     try {
+        if (!ensureAuthPrereqs(res)) return;
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({
@@ -105,7 +137,8 @@ const registerUser = async (req, res) => {
         
         res.status(500).json({
             success: false,
-            message: 'Server error during user registration'
+            message: 'Server error during user registration',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }
 };
@@ -115,6 +148,8 @@ const registerUser = async (req, res) => {
 // @access  Public
 const registerFixer = async (req, res) => {
     try {
+        if (!ensureAuthPrereqs(res)) return;
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({
@@ -213,7 +248,8 @@ const registerFixer = async (req, res) => {
         
         res.status(500).json({
             success: false,
-            message: 'Server error during fixer registration'
+            message: 'Server error during fixer registration',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }
 };
@@ -223,6 +259,8 @@ const registerFixer = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
     try {
+        if (!ensureAuthPrereqs(res)) return;
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({
@@ -295,7 +333,7 @@ const loginUser = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: parseInt(process.env.JWT_REFRESH_EXPIRE) * 24 * 60 * 60 * 1000
+            maxAge: getRefreshCookieMaxAgeMs()
         });
 
         res.status(200).json({
@@ -322,7 +360,8 @@ const loginUser = async (req, res) => {
         console.error('User login error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error during user login'
+            message: 'Server error during user login',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }
 };
@@ -332,6 +371,8 @@ const loginUser = async (req, res) => {
 // @access  Public
 const loginFixer = async (req, res) => {
     try {
+        if (!ensureAuthPrereqs(res)) return;
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({
@@ -398,7 +439,8 @@ const loginFixer = async (req, res) => {
         console.error('Fixer login error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error during fixer login'
+            message: 'Server error during fixer login',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }
 };

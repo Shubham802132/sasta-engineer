@@ -13,7 +13,8 @@ const connectDB = async () => {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             bufferMaxEntries: 0,
-            bufferCommands: false
+            bufferCommands: false,
+            autoIndex: process.env.NODE_ENV !== 'production'
         });
         
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
@@ -37,7 +38,8 @@ const connectDB = async () => {
 
         // Keep existing app behavior: allow running without DB for demo/dev.
         // If you want to fail startup in production, set DB_FAIL_FAST=true.
-        if (process.env.DB_FAIL_FAST === 'true') {
+        const shouldFailFast = process.env.DB_FAIL_FAST === 'true' || process.env.NODE_ENV === 'production';
+        if (shouldFailFast) {
             process.exit(1);
         }
 
