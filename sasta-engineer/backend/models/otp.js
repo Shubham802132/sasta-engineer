@@ -121,9 +121,9 @@ otpSchema.statics.cleanExpiredOTPs = function() {
 // Pre-save middleware to ensure OTP is 6 digits
 otpSchema.pre('save', function(next) {
     if (this.otp && this.otp.length !== 6) {
-        next(new Error('OTP must be exactly 6 digits'));
+        return next(new Error('OTP must be exactly 6 digits'));
     }
-    next();
+    return next();
 });
 
 module.exports = mongoose.model('OTP', otpSchema);

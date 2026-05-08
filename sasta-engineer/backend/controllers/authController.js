@@ -45,11 +45,18 @@ const registerUser = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({
                 success: false,
+                message: 'Validation failed',
                 errors: errors.array()
             });
         }
 
         const { name, username, email, phone, password, address } = req.body;
+        console.log('📝 User registration attempt', {
+            email,
+            username,
+            phone,
+            hasAddress: !!address
+        });
 
         // Check if user already exists
         const existingUser = await User.findOne({
@@ -57,7 +64,7 @@ const registerUser = async (req, res) => {
         });
 
         if (existingUser) {
-            return res.status(400).json({
+            return res.status(409).json({
                 success: false,
                 message: 'User with this email, username, or phone already exists'
             });
@@ -109,7 +116,13 @@ const registerUser = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('User registration error:', error);
+        console.error('User registration error:', {
+            name: error?.name,
+            code: error?.code,
+            message: error?.message,
+            errors: error?.errors ? Object.keys(error.errors) : undefined,
+            stack: process.env.NODE_ENV === 'production' ? undefined : error?.stack
+        });
         
         // Handle duplicate key error
         if (error.code === 11000) {
@@ -127,11 +140,29 @@ const registerUser = async (req, res) => {
                 message = `${field} already exists. Please use a different ${field}.`;
             }
             
-            return res.status(400).json({
+            return res.status(409).json({
                 success: false,
                 message: message,
                 field: field,
                 value: value
+            });
+        }
+
+        // Handle mongoose validation errors (bad/weak password, missing fields, invalid email, etc.)
+        if (error?.name === 'ValidationError') {
+            const fieldErrors = Object.values(error.errors || {}).map((e) => ({
+                field: e.path,
+                message: e.message
+            }));
+
+            const primaryMessage =
+                fieldErrors[0]?.message ||
+                'Invalid registration data';
+
+            return res.status(400).json({
+                success: false,
+                message: primaryMessage,
+                errors: fieldErrors
             });
         }
         
