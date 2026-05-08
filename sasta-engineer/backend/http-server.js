@@ -15,12 +15,15 @@ const connectDB = require('./config/database');
 
 // Startup env sanity checks (do not print secrets)
 (() => {
-    const required = ['PORT', 'JWT_SECRET', 'MONGODB_URI'];
+    const isProd = process.env.NODE_ENV === 'production';
+    const required = isProd ? ['PORT', 'JWT_SECRET', 'MONGODB_URI'] : ['PORT'];
     const missing = required.filter((k) => !process.env[k]);
 
     const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || process.env.CORS_ORIGINS;
     if (!clientUrl) {
         console.warn('⚠️ CLIENT_URL / FRONTEND_URL / CORS_ORIGINS is not set. CORS may block your deployed frontend.');
+        // Safe default to keep production frontend working if env is missing.
+        process.env.CORS_ORIGINS = 'https://sasta-engineer.vercel.app';
     }
 
     if (missing.length) {
@@ -694,7 +697,7 @@ const startServer = async () => {
             console.log('⚠️ Continuing without database connection for demo...');
         }
 
-        app.listen(PORT, '0.0.0.0', () => {
+        const server = app.listen(PORT, '0.0.0.0', () => {
             console.log('='.repeat(60));
             console.log('🚀 FIXGHAR Backend HTTP Server Started!');
             console.log('='.repeat(60));
@@ -707,6 +710,16 @@ const startServer = async () => {
             console.log('✅ CORS configured for frontend communication');
             console.log('✅ All API endpoints available');
             console.log('='.repeat(60));
+        });
+
+        server.on('error', (err) => {
+            if (err && err.code === 'EADDRINUSE') {
+                console.error(`❌ Port ${PORT} is already in use. Stop the other process and retry.`);
+                console.error('On Windows: run `netstat -ano | findstr \":5000\"` then `taskkill /PID <pid> /F`');
+                process.exit(1);
+            }
+            console.error('❌ Server listen error:', err);
+            process.exit(1);
         });
 
     } catch (error) {
