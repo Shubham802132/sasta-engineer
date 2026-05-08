@@ -28,7 +28,9 @@ const userRegistrationValidation = [
         .withMessage('Username must be 3-30 characters and contain only letters, numbers, and underscores'),
     body('email')
         .isEmail()
-        .normalizeEmail()
+        // Avoid provider-specific normalization (e.g., Gmail dot stripping) that can
+        // cause "false duplicate" conflicts. We only trim + lowercase.
+        .customSanitizer((v) => (typeof v === 'string' ? v.trim().toLowerCase() : v))
         .withMessage('Please provide a valid email'),
     body('phone')
         .matches(/^[0-9+\-\s()]+$/)
