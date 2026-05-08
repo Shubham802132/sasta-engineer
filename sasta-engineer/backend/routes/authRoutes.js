@@ -36,8 +36,12 @@ const userRegistrationValidation = [
         .matches(/^[0-9+\-\s()]+$/)
         .withMessage('Please provide a valid phone number'),
     body('password')
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters'),
+        .isLength({ min: 8 })
+        .withMessage('Password must be at least 8 characters')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+        .withMessage(
+            'Password must include uppercase, lowercase, a number, and a special character (@$!%*?&)'
+        ),
     body('address.street')
         .trim()
         .notEmpty()

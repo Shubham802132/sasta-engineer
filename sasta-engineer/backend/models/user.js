@@ -130,10 +130,11 @@ userSchema.pre('save', async function(next) {
 
 // Sign JWT and return
 userSchema.methods.getSignedJwtToken = function() {
+    const expiresIn = process.env.JWT_EXPIRE || '7d';
     return jwt.sign(
         { id: this._id, role: this.role },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE }
+        { expiresIn }
     );
 };
 

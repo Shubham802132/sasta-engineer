@@ -49,6 +49,25 @@ function ensureAuthPrereqs(res) {
     return true;
 }
 
+/** User schema requires username; frontend may omit it — generate a unique handle from email. */
+async function generateUniqueUsernameForUser(normalizedEmail) {
+    const localRaw = (normalizedEmail || '').split('@')[0] || 'user';
+    let base = localRaw
+        .replace(/[^a-zA-Z0-9_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+    if (!base || base.length < 3) base = 'user';
+    base = base.slice(0, 22);
+
+    for (let i = 0; i < 5000; i++) {
+        const candidate = (i === 0 ? base : `${base}_${i}`).slice(0, 30);
+        const exists = await User.findOne({ username: candidate }).select('_id');
+        if (!exists) return candidate;
+    }
+
+    return `u_${Date.now()}_${Math.floor(Math.random() * 10000)}`.slice(0, 30);
+}
+
 // @desc    Register User
 // @route   POST /api/auth/register/user
 // @access  Public
@@ -182,24 +201,48 @@ const registerUser = async (req, res) => {
             }
         }
 
-        // Create user
-        const user = await User.create({
+        let finalUsername = normalized.username;
+        if (!finalUsername) {
+            console.log('📝 registerUser: username omitted — generating unique username');
+            finalUsername = await generateUniqueUsernameForUser(normalized.email);
+            console.log('📝 registerUser generated username:', finalUsername);
+        }
+
+        const phoneForSave = normalized.phone || phone;
+
+        console.log('📝 registerUser User.create (safe)', {
             name,
-            username: normalized.username || username,
-            email: normalized.email || email,
-            phone: normalized.phone || phone,
-            password,
-            address
+            username: finalUsername,
+            email: normalized.email,
+            phone: phoneForSave,
+            hasPassword: typeof password === 'string' && password.length > 0,
+            addressPresent: !!address
         });
 
+        let user;
+        try {
+            user = await User.create({
+                name,
+                username: finalUsername,
+                email: normalized.email || email,
+                phone: phoneForSave,
+                password,
+                address
+            });
+        } catch (saveErr) {
+            console.error('❌ User.create / save failed:', saveErr?.message);
+            console.error(saveErr?.stack);
+            throw saveErr;
+        }
+
         // Generate OTP for phone verification
-        const otp = await OTP.createOTP(phone, 'phone_verification', 'user', user._id);
+        const otp = await OTP.createOTP(phoneForSave, 'phone_verification', 'user', user._id);
 
         // Send OTP SMS
         try {
             console.log('📱 Phone verification OTP:', otp.otp);
-            await smsService.sendOTP(phone, otp.otp, 'user');
-            console.log('✅ SMS sent successfully to:', phone);
+            await smsService.sendOTP(phoneForSave, otp.otp, 'user');
+            console.log('✅ SMS sent successfully to:', phoneForSave);
         } catch (smsError) {
             console.error('❌ SMS sending failed:', smsError.message);
             console.log('⚠️ Registration continues without SMS verification');
@@ -207,7 +250,14 @@ const registerUser = async (req, res) => {
         }
 
         // Generate token
-        const token = user.getSignedJwtToken();
+        let token;
+        try {
+            token = user.getSignedJwtToken();
+        } catch (jwtErr) {
+            console.error('❌ JWT sign failed after registration:', jwtErr?.message);
+            console.error(jwtErr?.stack);
+            throw jwtErr;
+        }
 
         const successBody = {
             success: true,
@@ -245,12 +295,12 @@ const registerUser = async (req, res) => {
         res.status(201).json(successBody);
 
     } catch (error) {
-        console.error('User registration error:', {
+        console.error('User registration error.message:', error?.message);
+        console.error('User registration error.stack:', error?.stack);
+        console.error('User registration error (detail):', {
             name: error?.name,
             code: error?.code,
-            message: error?.message,
-            errors: error?.errors ? Object.keys(error.errors) : undefined,
-            stack: process.env.NODE_ENV === 'production' ? undefined : error?.stack
+            errors: error?.errors ? Object.keys(error.errors) : undefined
         });
         
         // Handle duplicate key error
@@ -294,11 +344,34 @@ const registerUser = async (req, res) => {
                 errors: fieldErrors
             });
         }
-        
+
+        if (error?.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: error.message || 'Invalid data format'
+            });
+        }
+
+        const jwtRelated =
+            error?.name === 'JsonWebTokenError' ||
+            error?.name === 'TokenExpiredError' ||
+            (typeof error?.message === 'string' &&
+                error.message.toLowerCase().includes('jwt'));
+
+        if (jwtRelated) {
+            return res.status(500).json({
+                success: false,
+                message:
+                    error?.message ||
+                    'Token signing failed. Check JWT_SECRET and JWT_EXPIRE on the server.'
+            });
+        }
+
         res.status(500).json({
             success: false,
-            message: 'Server error during user registration',
-            error: process.env.NODE_ENV === 'production' ? undefined : error.message
+            message:
+                error?.message ||
+                'Registration failed due to an unexpected error.'
         });
     }
 };
