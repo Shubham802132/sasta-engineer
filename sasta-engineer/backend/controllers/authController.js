@@ -80,6 +80,12 @@ const registerUser = async (req, res) => {
             hasAddress: !!address
         });
 
+        console.log('📧 registerUser email normalize', {
+            rawEmail: typeof email === 'string' ? email : typeof email,
+            normalizedEmail: normalized.email,
+            isEmailEmpty: !normalized.email
+        });
+
         console.log('📝 User registration attempt', {
             email: normalized.email,
             username: normalized.username,
@@ -96,7 +102,12 @@ const registerUser = async (req, res) => {
         console.log('🔎 Duplicate check conditions', duplicateCheck);
 
         if (duplicateCheck.email) {
-            const emailExists = await User.findOne({ email: duplicateCheck.email }).select('_id');
+            const emailExists = await User.findOne({ email: duplicateCheck.email }).select('_id email');
+            console.log('🔎 Duplicate query result (email)', {
+                email: duplicateCheck.email,
+                found: !!emailExists,
+                id: emailExists?._id
+            });
             if (emailExists) {
                 return res.status(409).json({
                     success: false,
