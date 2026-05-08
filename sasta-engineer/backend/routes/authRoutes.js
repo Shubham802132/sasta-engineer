@@ -21,6 +21,7 @@ const userRegistrationValidation = [
         .isLength({ min: 2, max: 50 })
         .withMessage('Name must be between 2 and 50 characters'),
     body('username')
+        .optional({ values: 'falsy' })
         .trim()
         .isLength({ min: 3, max: 30 })
         .matches(/^[a-zA-Z0-9_]+$/)

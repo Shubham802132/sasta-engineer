@@ -17,11 +17,7 @@ function normalizeUsername(username) {
 
 function normalizePhone(phone) {
     if (typeof phone !== 'string') return '';
-    // keep digits only; store/compare in a consistent way
-    const digits = phone.replace(/\D/g, '');
-    // If country code included, keep full digits; else keep digits as-is.
-    // (We avoid forcing to 10 digits because existing DB may store with country code.)
-    return digits;
+    return phone.trim();
 }
 
 function getRefreshCookieMaxAgeMs() {
@@ -76,6 +72,14 @@ const registerUser = async (req, res) => {
             phone: normalizePhone(phone)
         };
 
+        console.log('🧾 registerUser req.body (safe)', {
+            email,
+            username,
+            phone,
+            hasPassword: typeof password === 'string' && password.length > 0,
+            hasAddress: !!address
+        });
+
         console.log('📝 User registration attempt', {
             email: normalized.email,
             username: normalized.username,
@@ -83,34 +87,46 @@ const registerUser = async (req, res) => {
             hasAddress: !!address
         });
 
-        // Check if user already exists
-        const orConditions = [];
-        if (normalized.email) orConditions.push({ email: normalized.email });
-        if (normalized.username) orConditions.push({ username: normalized.username });
-        if (normalized.phone) orConditions.push({ phone: normalized.phone });
+        // Duplicate checks (only for non-empty values)
+        const duplicateCheck = {
+            email: normalized.email,
+            phone: normalized.phone,
+            username: normalized.username
+        };
+        console.log('🔎 Duplicate check conditions', duplicateCheck);
 
-        if (orConditions.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing registration identifiers (email/username/phone)'
-            });
+        if (duplicateCheck.email) {
+            const emailExists = await User.findOne({ email: duplicateCheck.email }).select('_id');
+            if (emailExists) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Email already exists',
+                    field: 'email'
+                });
+            }
         }
 
-        const existingUser = await User.findOne({ $or: orConditions }).select('email username phone');
+        if (duplicateCheck.phone) {
+            const phoneExists = await User.findOne({ phone: duplicateCheck.phone }).select('_id');
+            if (phoneExists) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Phone already exists',
+                    field: 'phone'
+                });
+            }
+        }
 
-        if (existingUser) {
-            const conflicts = [];
-            if (normalized.email && existingUser.email === normalized.email) conflicts.push('email');
-            if (normalized.username && existingUser.username === normalized.username) conflicts.push('username');
-            if (normalized.phone && normalizePhone(existingUser.phone) === normalized.phone) conflicts.push('phone');
-
-            return res.status(409).json({
-                success: false,
-                message: conflicts.length
-                    ? `User with this ${conflicts.join(', ')} already exists`
-                    : 'User with this email, username, or phone already exists',
-                conflicts: conflicts
-            });
+        // Username is optional for duplicate checking if empty
+        if (duplicateCheck.username) {
+            const usernameExists = await User.findOne({ username: duplicateCheck.username }).select('_id');
+            if (usernameExists) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Username already exists',
+                    field: 'username'
+                });
+            }
         }
 
         // Create user
