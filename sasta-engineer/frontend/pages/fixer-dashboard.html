@@ -1,0 +1,2896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixGhar Fixer Dashboard</title>
+    <link rel="stylesheet" href="../css/fixer-dashboard-styles.css">
+    <link rel="stylesheet" href="../css/chatbot-styles.css">
+    
+    <link rel="icon" type="image/x-icon" href="../asset/logo.png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="fixer-dashboard">
+    <div class="dashboard-container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-image">
+                        <img src="../asset/logo.png" alt="Logo">
+                    </div>
+                    <span>FIXGHAR</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>OVERVIEW</h3>
+                    <ul>
+        <li onclick="setActiveNav(this, 'dashboard')">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </li>
+                        <li onclick="setActiveNav(this, 'myjobs'); showMyJobs()">
+                            <i class="fas fa-tasks"></i>
+                            <span>My Jobs</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'requests'); showServiceRequests()">
+                            <i class="fas fa-bell"></i>
+                            <span>Service Requests</span>
+                            <span id="serviceRequestsBadge" style="background: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; margin-left: 8px;">0</span>
+                            <button onclick="refreshServiceRequestsCount(); event.stopPropagation();" style="background: #28a745; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; margin-left: 5px; cursor: pointer;" title="Refresh Count">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </li>
+                        <li onclick="setActiveNav(this, 'schedule'); showSchedule()">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Schedule</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'services'); showServices()">
+                            <i class="fas fa-tools"></i>
+                            <span>Services</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'analytics'); showAnalytics()">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Analytics</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>MANAGE</h3>
+                    <ul>
+                        <li onclick="setActiveNav(this, 'profile'); showProfileModal()">
+                            <i class="fas fa-user-edit"></i>
+                            <span>Profile</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'earnings'); showEarnings()">
+                            <i class="fas fa-rupee-sign"></i>
+                            <span>Earnings</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'reviews'); showReviews()">
+                            <i class="fas fa-star"></i>
+                            <span>Reviews</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'notifications'); showNotifications()">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>SUPPORT</h3>
+                    <ul>
+                        <li onclick="setActiveNav(this, 'help'); showHelp()">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Help</span>
+                        </li>
+                        <li onclick="setActiveNav(this, 'settings'); showSettings()">
+                            <i class="fas fa-cog"></i>
+                            <span>Settings</span>
+                        </li>
+                        <li onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Profile Button in Main Content -->
+            <div class="main-profile-button">
+                <button class="show-profile-btn" onclick="showProfileModal()">
+                    <i class="fas fa-user"></i>
+                    My Profile
+                </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="search-section">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search jobs, customers, or locations...">
+                </div>
+            </div>
+
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+            <div class="banner-background">
+                <div class="banner-pattern"></div>
+            </div>
+            <div class="banner-content">
+                <div class="welcome-section">
+                    <div class="welcome-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h1>Welcome Back, <span class="highlight">Fixer!</span></h1>
+                    <p>Ready to tackle today's challenges? Let's get to work!</p>
+                </div>
+                <div class="banner-actions">
+                    <div class="toggle-container" onclick="toggleAvailability()">
+                        <div class="toggle-switch" id="toggleSwitch">
+                            <div class="toggle-slider" id="toggleSlider"></div>
+                            <div class="toggle-dot" id="toggleDot"></div>
+                        </div>
+                        <span id="availabilityText" class="toggle-text">Go Online</span>
+                    </div>
+                    <button class="cta-button secondary" onclick="showProfileModal()">
+                        <i class="fas fa-user-edit"></i>
+                        <span>Update Profile</span>
+                    </button>
+                </div>
+            </div>
+            <div class="banner-decoration">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                </div>
+                </div>
+
+        <!-- Main Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Service Requests Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>New Job Requests</h2>
+                    <button class="view-all-btn" onclick="viewAllRequests()">View All</button>
+                </div>
+                <div class="requests-grid" id="newJobRequests">
+                    <!-- Job requests will be populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Ongoing Jobs Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Ongoing Jobs</h2>
+                    <button class="view-all-btn" onclick="viewAllOngoingJobs()">View All</button>
+                </div>
+                <div class="jobs-grid" id="ongoingJobs">
+                    <!-- Ongoing jobs will be populated dynamically -->
+                </div>
+            </div>
+
+
+    <script src="../config.js"></script>
+    <script src="../js/api-service.js"></script>
+    <script src="../scripts/fixer-dashboard-script.js"></script>
+    
+    <!-- Test Script -->
+    <script>
+        console.log('🔍 Testing JavaScript...');
+        
+        // Test if functions are available
+        setTimeout(() => {
+            console.log('showMyJobs:', typeof showMyJobs);
+            console.log('showProfileModal:', typeof showProfileModal);
+            console.log('setActiveNav:', typeof setActiveNav);
+            
+            if (typeof showMyJobs === 'function') {
+                console.log('✅ showMyJobs is available');
+            } else {
+                console.error('❌ showMyJobs is not available');
+            }
+            
+            if (typeof showProfileModal === 'function') {
+                console.log('✅ showProfileModal is available');
+            } else {
+                console.error('❌ showProfileModal is not available');
+            }
+            
+            if (typeof setActiveNav === 'function') {
+                console.log('✅ setActiveNav is available');
+            } else {
+                console.error('❌ setActiveNav is not available');
+            }
+        }, 1000);
+        
+        
+        // Helper function to create beautiful modals
+        function createModal(content) {
+            // Remove any existing modal
+            const existingModal = document.querySelector('.modal-overlay');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create modal overlay with proper CSS classes
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 800px; width: 95%;">
+                    ${content}
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside
+            modal.onclick = function(event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            };
+            
+            // Add close button functionality
+            const closeBtn = modal.querySelector('.modal-close');
+            if (closeBtn) {
+            closeBtn.onclick = closeModal;
+            }
+        }
+        
+        function closeModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Sample data for My Jobs (matches database data)
+        const sampleMyJobs = [
+            {
+                id: 'job1',
+                serviceType: 'Plumbing Repair',
+                customer: 'Priya Sharma',
+                location: '123 Main Street, Noida, Uttar Pradesh',
+                status: 'in-progress',
+                progress: 60,
+                date: '2024-01-15',
+                time: '2:30 PM',
+                budget: '₹1,200'
+            },
+            {
+                id: 'job2',
+                serviceType: 'AC Repair',
+                customer: 'Amit Kumar',
+                location: '456 Park Avenue, Greater Noida, Uttar Pradesh',
+                status: 'completed',
+                progress: 100,
+                date: '2024-01-14',
+                time: '4:00 PM',
+                budget: '₹1,500'
+            },
+            {
+                id: 'job3',
+                serviceType: 'Electrical Installation',
+                customer: 'Ravi Singh',
+                location: '789 Sector 18, Noida, Uttar Pradesh',
+                status: 'pending',
+                progress: 0,
+                date: '2024-01-16',
+                time: '6:00 PM',
+                budget: '₹1,800'
+            }
+        ];
+
+        // Function to render job cards for My Jobs modal
+        function renderMyJobCards(jobs, filter = 'all') {
+            let filteredJobs = jobs;
+            
+            if (filter !== 'all') {
+                filteredJobs = jobs.filter(job => job.status === filter);
+            }
+
+            if (filteredJobs.length === 0) {
+                return `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                        <h3 style="color: #333; margin-bottom: 10px;">No Jobs Found</h3>
+                        <p>No jobs found for the selected filter.</p>
+                    </div>
+                `;
+            }
+
+            return filteredJobs.map(job => {
+                const statusColor = {
+                    'pending': '#ffc107',
+                    'in-progress': '#17a2b8',
+                    'completed': '#28a745',
+                    'cancelled': '#dc3545'
+                };
+
+                const statusText = {
+                    'pending': 'Pending',
+                    'in-progress': 'In Progress',
+                    'completed': 'Completed',
+                    'cancelled': 'Cancelled'
+                };
+
+                return `
+                    <div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid ${statusColor[job.status]};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <div>
+                                <h3 style="margin: 0; color: #333; font-size: 18px; font-weight: bold;">${job.serviceType}</h3>
+                                <p style="margin: 5px 0; color: #666; font-size: 14px;">Job ID: #${job.id}</p>
+                            </div>
+                            <span style="background: ${statusColor[job.status]}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                                ${statusText[job.status]}
+                            </span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <strong style="color: #333; font-size: 12px; text-transform: uppercase;">👤 Customer</strong>
+                                <p style="margin: 5px 0; color: #666; font-weight: bold;">${job.customer}</p>
+                                <p style="margin: 0; color: #999; font-size: 12px;">📍 ${job.location}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #333; font-size: 12px; text-transform: uppercase;">📅 Schedule</strong>
+                                <p style="margin: 5px 0; color: #666;">${new Date(job.date).toLocaleDateString()}</p>
+                                <p style="margin: 0; color: #999; font-size: 12px;">⏰ ${job.time}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <strong style="color: #333; font-size: 12px; text-transform: uppercase;">💰 Budget</strong>
+                                <p style="margin: 5px 0; color: #28a745; font-weight: bold; font-size: 16px;">${job.budget}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #333; font-size: 12px; text-transform: uppercase;">📊 Progress</strong>
+                                <p style="margin: 5px 0; color: #666; font-weight: bold;">${job.progress}% Complete</p>
+                            </div>
+                        </div>
+                        
+                        ${job.status === 'in-progress' ? `
+                            <div style="margin-bottom: 15px;">
+                                <div style="width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
+                                    <div style="width: ${job.progress}%; height: 100%; background: #ef860d; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            ${job.status === 'in-progress' ? `
+                                <button onclick="updateJobProgress('${job.id}')" style="background: #ef860d; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#d6760a'" onmouseout="this.style.background='#ef860d'">
+                                    📊 Update Progress
+                                </button>
+                            ` : ''}
+                            <button onclick="contactCustomer('${job.id}')" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                                📞 Contact
+                            </button>
+                            <button onclick="viewJobDetails('${job.id}')" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#138496'" onmouseout="this.style.background='#17a2b8'">
+                                👁️ View Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Override external script functions with working versions
+        async function showMyJobs() {
+            try {
+                console.log('📋 Loading My Jobs...');
+                
+                let jobsData = [];
+                
+                // Try to get real data from chatbot first
+                if (window.chatbot && window.chatbot.fixerBookings) {
+                    const bookings = window.chatbot.fixerBookings;
+                    
+                    // Transform chatbot booking data to match our format
+                    jobsData = bookings.map(booking => {
+                        const userInfo = booking.user || {};
+                        const serviceInfo = booking.service || {};
+                        
+                        return {
+                            id: booking.id || booking._id || 'N/A',
+                            serviceType: serviceInfo.name || booking.service || 'General Service',
+                            customer: userInfo.name || 'Unknown Customer',
+                            location: booking.address || 'Location not specified',
+                            status: booking.status || 'pending',
+                            progress: booking.progress || 0,
+                            date: booking.preferredDate || booking.createdAt || new Date().toISOString(),
+                            time: booking.preferredTime || 'Flexible',
+                            budget: booking.amount ? `₹${booking.amount}` : booking.budget ? `₹${booking.budget}` : 'Not specified'
+                        };
+                    });
+                    
+                    console.log('✅ Loaded jobs data from chatbot:', jobsData.length, 'jobs');
+                } else {
+                    // Fallback: try to load from API
+                    const token = localStorage.getItem('fixghar_token');
+                    if (token) {
+                        try {
+                            const response = await fetch('https://fixghar.onrender.com/api/fixers/bookings', {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                const apiJobs = data.data || [];
+                                
+                                // Transform API booking data to match our format
+                                jobsData = apiJobs.map(booking => {
+                                    const userInfo = booking.user || {};
+                                    const serviceInfo = booking.service || {};
+                                    
+                                    return {
+                                        id: booking._id,
+                                        serviceType: serviceInfo.name || 'General Service',
+                                        customer: userInfo.name || 'Unknown Customer',
+                                        location: booking.address || 'Location not specified',
+                                        status: booking.status || 'pending',
+                                        progress: booking.progress || 0,
+                                        date: booking.preferredDate || booking.createdAt,
+                                        time: booking.preferredTime || 'Flexible',
+                                        budget: booking.budget ? `₹${booking.budget}` : 'Not specified'
+                                    };
+                                });
+                                
+                                console.log('✅ Loaded jobs data from API:', jobsData.length, 'jobs');
+                            } else {
+                                console.log('⚠️ Could not load jobs from API');
+                            }
+                        } catch (error) {
+                            console.log('⚠️ Error loading jobs from API:', error);
+                        }
+                    }
+                }
+
+                const content = `
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">
+                        <h2 style="margin: 0; color: #333; font-size: 28px; display: flex; align-items: center;">
+                            <i class="fas fa-tasks" style="margin-right: 10px; color: #ef860d;"></i>
+                            My Jobs
+                        </h2>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button onclick="refreshMyJobsData();" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;" title="Refresh Jobs">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <span class="modal-close" style="cursor: pointer; font-size: 28px; color: #999; transition: color 0.3s; padding: 5px;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">&times;</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #ef860d 0%, #a17006 100%); color: white; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">📋 Job Overview</h3>
+                                <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">${jobsData.length} total jobs</p>
+                            </div>
+                            <button onclick="refreshMyJobsData();" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button onclick="filterMyJobs('all')" style="margin-right: 10px; padding: 8px 16px; background: #ef860d; color: white; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#d6760a'" onmouseout="this.style.background='#ef860d'">All Jobs</button>
+                        <button onclick="filterMyJobs('pending')" style="margin-right: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Pending</button>
+                        <button onclick="filterMyJobs('in-progress')" style="margin-right: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">In Progress</button>
+                        <button onclick="filterMyJobs('completed')" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">Completed</button>
+                    </div>
+                    
+                    <div style="max-height: 500px; overflow-y: auto;" id="myJobsContainer">
+                        ${renderMyJobCards(jobsData, 'all')}
+                    </div>
+                `;
+                
+                createModal(content);
+                
+                // Store jobs data globally for filtering
+                window.currentJobsData = jobsData;
+                
+            } catch (error) {
+                console.error('Error loading My Jobs:', error);
+                alert('Error loading jobs. Please try again.');
+            }
+        }
+        
+        async function showProfileModal() {
+            try {
+                // Get user data from localStorage first
+                const userData = JSON.parse(localStorage.getItem('fixghar_user') || '{}');
+                const isOnline = localStorage.getItem('fixer_online') === 'true';
+                
+                console.log('👤 Showing profile for:', userData.name || 'Unknown');
+                
+                // Create beautiful profile modal with your actual data
+                const content = `
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">
+                        <h2 style="margin: 0; color: #333; font-size: 28px; display: flex; align-items: center;">
+                            <i class="fas fa-user-circle" style="margin-right: 10px; color: #ef860d;"></i>
+                            My Profile
+                        </h2>
+                        <span class="modal-close" style="cursor: pointer; font-size: 28px; color: #999; transition: color 0.3s; padding: 5px;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">&times;</span>
+                                            </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-bottom: 30px;">
+                        <!-- Profile Picture Section -->
+                        <div style="text-align: center;">
+                            <div style="width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #ef860d 0%, #a17006 100%); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 10px 30px rgba(239, 134, 13, 0.3);">
+                                <div style="width: 140px; height: 140px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #ef860d;">
+                                    🔧
+                                        </div>
+                                <div style="position: absolute; bottom: 10px; right: 10px; width: 30px; height: 30px; background: ${isOnline ? '#28a745' : '#dc3545'}; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
+                                    ${isOnline ? '✓' : '✗'}
+                                    </div>
+                            </div>
+                            <h3 style="margin: 0; color: #333; font-size: 22px;">${userData.name || 'Shubham Kumar'}</h3>
+                            <p style="margin: 5px 0; color: #666; font-size: 16px;">${userData.serviceCategory || 'Professional Fixer'}</p>
+                            <div style="display: flex; align-items: center; justify-content: center; margin-top: 10px;">
+                                <span style="color: #ffc107; font-size: 18px;">★★★★★</span>
+                                <span style="margin-left: 8px; color: #666; font-size: 14px;">4.8 (127 reviews)</span>
+                        </div>
+                    </div>
+                    
+                        <!-- Profile Stats -->
+                        <div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div style="background: linear-gradient(135deg, #ef860d 0%, #a17006 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(239, 134, 13, 0.3);">
+                                    <div id="profileTotalJobs" style="font-size: 24px; font-weight: bold;">0</div>
+                                    <div style="font-size: 12px; opacity: 0.9;">Total Jobs</div>
+                    </div>
+                                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(240, 147, 251, 0.3);">
+                                    <div id="profileCompletedJobs" style="font-size: 24px; font-weight: bold;">0</div>
+                                    <div style="font-size: 12px; opacity: 0.9;">Completed</div>
+                </div>
+                                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);">
+                                    <div style="font-size: 24px; font-weight: bold;">₹500</div>
+                                    <div style="font-size: 12px; opacity: 0.9;">Hourly Rate</div>
+                                    </div>
+                                <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(67, 233, 123, 0.3);">
+                                    <div style="font-size: 24px; font-weight: bold;">5+</div>
+                                    <div style="font-size: 12px; opacity: 0.9;">Years Exp</div>
+                        </div>
+                    </div>
+                    
+                            <!-- Online Status -->
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div>
+                                        <strong style="color: #333;">Status</strong>
+                                        <div style="display: flex; align-items: center; margin-top: 5px;">
+                                            <div style="width: 12px; height: 12px; background: ${isOnline ? '#28a745' : '#dc3545'}; border-radius: 50%; margin-right: 8px; animation: ${isOnline ? 'pulse 2s infinite' : 'none'};"></div>
+                                            <span style="color: ${isOnline ? '#28a745' : '#dc3545'}; font-weight: 500;">${isOnline ? 'Online & Available' : 'Offline'}</span>
+                                        </div>
+                                    </div>
+                                    <button onclick="toggleProfileStatus()" style="padding: 8px 16px; background: ${isOnline ? '#dc3545' : '#28a745'}; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.3s;" onmouseover="this.style.background='${isOnline ? '#c82333' : '#218838'}'" onmouseout="this.style.background='${isOnline ? '#dc3545' : '#28a745'}'">
+                                        ${isOnline ? 'Go Offline' : 'Go Online'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                    </div>
+                    
+                    <!-- Profile Information -->
+                    <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
+                        <h3 style="margin: 0 0 20px 0; color: #333; font-size: 20px; display: flex; align-items: center;">
+                            <i class="fas fa-info-circle" style="margin-right: 10px; color: #ef860d;"></i>
+                            Profile Information
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Full Name</label>
+                                <input type="text" value="${userData.name || 'Shubham Kumar'}" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'">
+                    </div>
+                            <div class="form-group">
+                                <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Email</label>
+                                <input type="email" value="${userData.email || 'singhsubhum0@gmail.com'}" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'">
+                </div>
+                            <div class="form-group">
+                                <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Phone</label>
+                                <input type="tel" value="${userData.phone || '7019277781'}" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'">
+                                    </div>
+                            <div class="form-group">
+                                <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Experience</label>
+                                <input type="number" value="5" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Services & Skills -->
+                    <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
+                        <h3 style="margin: 0 0 20px 0; color: #333; font-size: 20px; display: flex; align-items: center;">
+                            <i class="fas fa-tools" style="margin-right: 10px; color: #ef860d;"></i>
+                            Services & Skills
+                        </h3>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Service Category</label>
+                            <select style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'">
+                                <option value="plumbing" selected>Plumbing</option>
+                                <option value="electrical">Electrical</option>
+                                <option value="ac-repair">AC Repair</option>
+                                <option value="carpentry">Carpentry</option>
+                                <option value="multi-service">Multi-Service</option>
+                            </select>
+                                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Skills</label>
+                            <textarea style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; min-height: 80px; resize: vertical; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'" placeholder="Describe your skills and expertise...">Expert in home repairs, maintenance, and installations. Specialized in plumbing, electrical work, and AC repair.</textarea>
+                            </div>
+                        <div>
+                            <label style="display: block; color: #666; font-size: 12px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Service Areas</label>
+                            <input type="text" value="Alpha 2, Greater Noida, Uttar Pradesh" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;" onfocus="this.style.borderColor='#ef860d'" onblur="this.style.borderColor='#e9ecef'" placeholder="e.g., Noida, Ghaziabad, Delhi">
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                        <button onclick="closeModal()" style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                            <i class="fas fa-times" style="margin-right: 5px;"></i>Cancel
+                        </button>
+                        <button onclick="console.log('🔧 Save Profile button clicked!'); saveProfile();" style="padding: 12px 24px; background: linear-gradient(135deg, #ef860d 0%, #a17006 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s; box-shadow: 0 4px 15px rgba(239, 134, 13, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(239, 134, 13, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(239, 134, 13, 0.3)'">
+                            <i class="fas fa-save" style="margin-right: 5px;"></i>Save Profile
+                        </button>
+                </div>
+            `;
+                createModal(content);
+            } catch (error) {
+                console.error('Error showing profile:', error);
+                alert('Error loading profile. Please try again.');
+            }
+        }
+        
+        function setActiveNav(element, section) {
+            // Remove active class from all navigation items
+            const allNavItems = document.querySelectorAll('.sidebar-nav li');
+            allNavItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked item
+            element.classList.add('active');
+        }
+        
+        async function showServiceRequests() {
+            try {
+                console.log('📋 Loading service requests...');
+                
+                const token = localStorage.getItem('fixghar_token');
+                console.log('🔑 Token available:', !!token);
+                
+                // Prepare headers
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Add authorization header if token exists
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                    console.log('🔑 Making API request with token:', token.substring(0, 20) + '...');
+                } else {
+                    console.log('🔑 Making API request without token (public endpoint)');
+                }
+                
+                const response = await fetch('https://fixghar.onrender.com/api/fixers/service-requests', {
+                    headers: headers
+                });
+
+                console.log('📡 API Response status:', response.status);
+                console.log('📡 API Response headers:', response.headers);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error response:', errorText);
+                    throw new Error(`API Error: ${response.status} - ${errorText}`);
+                }
+
+            const data = await response.json();
+            const serviceRequests = data.data || [];
+            
+            console.log('📋 Service requests loaded:', serviceRequests);
+
+                let requestsHtml = '';
+                
+                if (serviceRequests.length === 0) {
+                    requestsHtml = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                            <h3 style="color: #333; margin-bottom: 10px;">No Service Requests</h3>
+                            <p>There are currently no service requests available.</p>
+                            <p>Check back later or make sure you're online to receive requests!</p>
+                        </div>
+                    `;
+                } else {
+                    requestsHtml = serviceRequests.map(request => {
+                        // Handle the actual API response structure
+                        const userInfo = request.user || {};
+                        const serviceInfo = request.service || {};
+                        
+                        const customerName = userInfo.name || 'Unknown Customer';
+                        const customerPhone = userInfo.phone || 'Not provided';
+                        const customerEmail = userInfo.email || 'Not provided';
+                        
+                        const serviceName = serviceInfo.name || 'General Service';
+                        const serviceDescription = serviceInfo.description || request.description || 'Service request';
+                        
+                        const address = request.address ? 
+                            (typeof request.address === 'string' ? request.address : 
+                             `${request.address.street || ''}, ${request.address.city || ''}, ${request.address.state || ''}`.trim()) 
+                            : 'Location not specified';
+                        
+                        const budget = request.budget || request.estimatedCost || 'Not specified';
+                        const preferredDate = request.preferredDate || request.scheduledDate || request.createdAt;
+                        const preferredTime = request.preferredTime || request.scheduledTime || 'Flexible';
+                        const status = request.status || 'pending';
+                        
+                        return `
+                        <div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid #ef860d;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                <div>
+                                    <h3 style="margin: 0; color: #333; font-size: 18px;">${serviceName}</h3>
+                                    <p style="margin: 5px 0; color: #666; font-size: 14px;">Request ID: #${request._id ? request._id.substring(0, 8) : 'N/A'}</p>
+                                </div>
+                                <span style="background: #ef860d; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                                    ${status.toUpperCase()}
+                                </span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <strong style="color: #333; font-size: 12px; text-transform: uppercase;">👤 Customer</strong>
+                                    <p style="margin: 5px 0; color: #666; font-weight: bold;">${customerName}</p>
+                                    <p style="margin: 0; color: #999; font-size: 12px;">📞 ${customerPhone}</p>
+                                    <p style="margin: 0; color: #999; font-size: 12px;">📧 ${customerEmail}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #333; font-size: 12px; text-transform: uppercase;">📍 Location</strong>
+                                    <p style="margin: 5px 0; color: #666; line-height: 1.3;">${address}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <strong style="color: #333; font-size: 12px; text-transform: uppercase;">📝 Description</strong>
+                                <p style="margin: 5px 0; color: #666; line-height: 1.4;">${serviceDescription}</p>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                                <div>
+                                    <strong style="color: #333; font-size: 12px; text-transform: uppercase;">💰 Budget</strong>
+                                    <p style="margin: 5px 0; color: #28a745; font-weight: bold;">₹${budget}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #333; font-size: 12px; text-transform: uppercase;">📅 Date</strong>
+                                    <p style="margin: 5px 0; color: #666;">${new Date(preferredDate).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #333; font-size: 12px; text-transform: uppercase;">⏰ Time</strong>
+                                    <p style="margin: 5px 0; color: #666;">${preferredTime}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button onclick="acceptServiceRequest('${request._id}')" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
+                                    ✅ Accept
+                                </button>
+                                <button onclick="rejectServiceRequest('${request._id}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+                                    ❌ Reject
+                                </button>
+                                <button onclick="viewServiceRequestDetails('${request._id}')" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                                    👁️ View Details
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                }
+
+                const content = `
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">
+                        <h2 style="margin: 0; color: #333; font-size: 28px; display: flex; align-items: center;">
+                            <i class="fas fa-clipboard-list" style="margin-right: 10px; color: #ef860d;"></i>
+                            Service Requests
+                        </h2>
+                        <span class="modal-close" style="cursor: pointer; font-size: 28px; color: #999; transition: color 0.3s; padding: 5px;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#999'">&times;</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #ef860d 0%, #a17006 100%); color: white; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">📋 Available Requests</h3>
+                                <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">${serviceRequests.length} service request${serviceRequests.length !== 1 ? 's' : ''} available</p>
+                            </div>
+                            <button onclick="showServiceRequests()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        ${requestsHtml}
+                    </div>
+                `;
+                
+                createModal(content);
+            } catch (error) {
+                console.error('Error loading service requests:', error);
+                alert('Error loading service requests. Please try again.');
+            }
+        }
+        
+        function showSchedule() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Schedule</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="refreshScheduleData();" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;" title="Refresh Schedule">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                    </div>
+                </div>
+                <div>
+                    <h3>Today's Schedule</h3>
+                    <div id="scheduleContainer">
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                            <p>Loading schedule...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            createModal(content);
+            
+            // Load schedule data after modal is created
+            setTimeout(() => {
+                loadScheduleData();
+            }, 100);
+        }
+        
+        function showServices() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>My Services</h2>
+                    <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                        </div>
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <h3>Plumbing</h3>
+                    <p>Pipe repair, leak fixing, installation</p>
+                    <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px;">Active</span>
+                        </div>
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <h3>Electrical</h3>
+                    <p>Wiring, switch repair, installation</p>
+                    <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px;">Active</span>
+                        </div>
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <h3>AC Repair</h3>
+                    <p>AC maintenance, repair, installation</p>
+                    <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px;">Active</span>
+                        </div>
+            `;
+            createModal(content);
+        }
+        
+        function showAnalytics() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Analytics</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="refreshAnalyticsData();" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;" title="Refresh Analytics">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center;">
+                        <h3>Total Jobs</h3>
+                        <div id="analyticsTotalJobs" style="font-size: 24px; font-weight: bold; color: #007bff;">0</div>
+                    </div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center;">
+                        <h3>Completed Jobs</h3>
+                        <div id="analyticsCompletedJobs" style="font-size: 24px; font-weight: bold; color: #28a745;">0</div>
+                    </div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center;">
+                        <h3>Average Rating</h3>
+                        <div id="analyticsAverageRating" style="font-size: 24px; font-weight: bold; color: #ffc107;">0.0</div>
+                    </div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center;">
+                        <h3>Total Earnings</h3>
+                        <div id="analyticsTotalEarnings" style="font-size: 24px; font-weight: bold; color: #28a745;">₹0</div>
+                    </div>
+                </div>
+            `;
+            createModal(content);
+            
+            // Load analytics data after modal is created
+            setTimeout(() => {
+                loadAnalyticsData();
+            }, 100);
+        }
+        
+        function showEarnings() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Earnings</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="refreshEarningsData();" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;" title="Refresh Earnings">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                    </div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
+                    <h3>This Month</h3>
+                    <div id="earningsThisMonth" style="font-size: 32px; font-weight: bold; color: #28a745;">₹0</div>
+                </div>
+                <div>
+                    <h3>Recent Payments</h3>
+                    <div id="earningsContainer">
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                            <p>Loading earnings...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            createModal(content);
+            
+            // Load earnings data after modal is created
+            setTimeout(() => {
+                loadEarningsData();
+            }, 100);
+        }
+        
+        function showReviews() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Reviews</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="refreshReviewsData();" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;" title="Refresh Reviews">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                    </div>
+                </div>
+                <div id="reviewsContainer">
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <p>Loading reviews...</p>
+                    </div>
+                </div>
+            `;
+            createModal(content);
+            
+            // Load reviews data after modal is created
+            setTimeout(() => {
+                loadReviewsData();
+            }, 100);
+        }
+        
+        function showNotifications() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Notifications</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="refreshNotificationsData();" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;" title="Refresh Notifications">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                    </div>
+                </div>
+                <div id="notificationsContainer">
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <p>Loading notifications...</p>
+                    </div>
+                </div>
+            `;
+            createModal(content);
+            
+            // Load notifications data after modal is created
+            setTimeout(() => {
+                loadNotificationsData();
+            }, 100);
+        }
+        
+        function showHelp() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Help & Support</h2>
+                    <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                            </div>
+                                <div>
+                    <h3>Frequently Asked Questions</h3>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                        <strong>How do I accept a job request?</strong>
+                        <p>Click on the "Accept" button next to the job request.</p>
+                            </div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                        <strong>How do I update my profile?</strong>
+                        <p>Click on "Profile" in the sidebar to edit your information.</p>
+                        </div>
+                            </div>
+            `;
+            createModal(content);
+        }
+        
+        function showSettings() {
+            const content = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Settings</h2>
+                    <span onclick="closeModal()" style="cursor: pointer; font-size: 24px;">&times;</span>
+                            </div>
+                                <div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <label>Notification Sound</label>
+                        <input type="checkbox" checked>
+                            </div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <label>Auto-accept Jobs</label>
+                        <input type="checkbox">
+                            </div>
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <label>Working Hours</label>
+                        <select>
+                            <option>9 AM - 6 PM</option>
+                            <option>8 AM - 8 PM</option>
+                            <option>24/7</option>
+                        </select>
+                        </div>
+                </div>
+            `;
+            createModal(content);
+        }
+        
+        function logoutDuplicate() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('fixghar_token');
+                localStorage.removeItem('fixghar_user');
+                localStorage.removeItem('userType');
+                window.location.href = '/';
+            }
+        }
+        
+        function toggleAvailability() {
+            const toggleSwitch = document.getElementById('toggleSwitch');
+            const availabilityText = document.getElementById('availabilityText');
+            
+            let isOnline = localStorage.getItem('fixer_online') === 'true';
+            isOnline = !isOnline;
+            
+            localStorage.setItem('fixer_online', isOnline.toString());
+            
+            if (isOnline) {
+                toggleSwitch.classList.add('online');
+                availabilityText.textContent = 'Online';
+            } else {
+                toggleSwitch.classList.remove('online');
+                availabilityText.textContent = 'Go Online';
+            }
+        }
+        
+        
+        function saveFixerProfile() {
+            alert('Profile saved!');
+        }
+        
+        function viewAllRequests() {
+            showServiceRequests();
+        }
+        
+        function viewAllOngoingJobs() {
+            showMyJobs();
+        }
+        
+        async function acceptRequest(requestId) {
+            try {
+                console.log('✅ Accepting request:', requestId);
+                
+                const token = localStorage.getItem('fixghar_token');
+                if (!token) {
+                    alert('Please login first!');
+                    return;
+                }
+
+                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'accepted',
+                        fixer: 'current'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('✅ Job request accepted successfully!\n\nYou have been assigned to this booking.');
+                    // Refresh the dashboard data
+                    loadDashboardData();
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Error accepting request: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error accepting request:', error);
+                alert('Error accepting request. Please try again.');
+            }
+        }
+        
+        async function rejectRequest(requestId) {
+            try {
+                console.log('❌ Rejecting request:', requestId);
+                
+                const token = localStorage.getItem('fixghar_token');
+                if (!token) {
+                    alert('Please login first!');
+                    return;
+                }
+
+                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'rejected'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('❌ Job request rejected.\n\nThe request has been declined.');
+                    // Refresh the dashboard data
+                    loadDashboardData();
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Error rejecting request: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                alert('Error rejecting request. Please try again.');
+            }
+        }
+        
+        async function updateJobProgress(jobId) {
+            try {
+                console.log('📊 Updating job progress:', jobId);
+                
+                const newProgress = prompt('Enter new progress percentage (0-100):');
+                if (newProgress === null || newProgress === '') return;
+                
+                const progress = parseInt(newProgress);
+                if (isNaN(progress) || progress < 0 || progress > 100) {
+                    alert('Please enter a valid progress percentage between 0 and 100.');
+                    return;
+                }
+                
+                const token = localStorage.getItem('fixghar_token');
+                if (!token) {
+                    alert('Please login first!');
+                    return;
+                }
+
+                const response = await fetch(`https://fixghar.onrender.com/api/fixers/jobs/${jobId}/progress`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        progress: progress
+                    })
+                });
+
+                if (response.ok) {
+                    alert(`✅ Job progress updated to ${progress}%!\n\nThe job status has been updated successfully.`);
+                    // Refresh the jobs data
+                    showMyJobs();
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Error updating progress: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating job progress:', error);
+                alert('Error updating job progress. Please try again.');
+            }
+        }
+        
+        function contactCustomer(jobId) {
+            // Find the job data
+            const job = window.currentJobsData?.find(j => j.id === jobId);
+            if (job) {
+                const message = `📞 Contact Customer\n\nJob: ${job.serviceType}\nCustomer: ${job.customer}\nLocation: ${job.location}\n\nWould you like to call or message the customer?`;
+                
+                if (confirm(message + '\n\nClick OK to call, Cancel to send message.')) {
+                    // Simulate calling
+                    alert(`📞 Calling ${job.customer}...\n\nPhone: [Customer's phone number would be displayed here]`);
+                } else {
+                    // Simulate messaging
+                    alert(`💬 Opening chat with ${job.customer}...\n\nYou can now send messages about the job.`);
+                }
+            } else {
+                alert('Customer contact information for job: ' + jobId);
+            }
+        }
+        
+        function viewJobDetails(jobId) {
+            // Find the job data
+            const job = window.currentJobsData?.find(j => j.id === jobId);
+            if (job) {
+                const details = `
+📋 Job Details
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 Service: ${job.serviceType}
+👤 Customer: ${job.customer}
+📍 Location: ${job.location}
+📅 Date: ${new Date(job.date).toLocaleDateString()}
+⏰ Time: ${job.time}
+💰 Budget: ${job.budget}
+📊 Progress: ${job.progress}% Complete
+🆔 Job ID: #${job.id}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 Additional Details:
+• Service description and requirements
+• Special instructions from customer
+• Materials needed
+• Estimated completion time
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                `;
+                alert(details);
+            } else {
+                alert('Job details for: ' + jobId);
+            }
+        }
+        
+        // Function to filter My Jobs
+        function filterMyJobs(filter) {
+            const container = document.getElementById('myJobsContainer');
+            if (!container || !window.currentJobsData) return;
+            
+            // Update button styles
+            const buttons = document.querySelectorAll('[onclick^="filterMyJobs"]');
+            buttons.forEach(btn => {
+                btn.style.background = '#6c757d';
+                btn.onmouseout = function() { this.style.background = '#6c757d'; };
+            });
+            
+            // Highlight active button
+            const activeButton = document.querySelector(`[onclick="filterMyJobs('${filter}')"]`);
+            if (activeButton) {
+                activeButton.style.background = '#ef860d';
+                activeButton.onmouseout = function() { this.style.background = '#ef860d'; };
+            }
+            
+            // Render filtered jobs
+            container.innerHTML = renderMyJobCards(window.currentJobsData, filter);
+        }
+
+        function filterJobs(filter) {
+            filterMyJobs(filter);
+        }
+        
+        function filterRequests(filter) {
+            alert('Filtering requests by: ' + filter);
+        }
+        
+        // Register as fixer
+        async function registerAsFixer(fixerData) {
+            try {
+                console.log('🔧 Registering as fixer...', fixerData);
+                
+                const response = await fetch('https://fixghar.onrender.com/api/auth/register/fixer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(fixerData)
+                });
+                
+                if (response.ok) {
+                const data = await response.json();
+                    console.log('✅ Fixer registered successfully:', data);
+                    
+                    // Update localStorage with fixer data
+                    localStorage.setItem('fixghar_token', data.data.token);
+                    localStorage.setItem('fixghar_user', JSON.stringify(data.data.fixer));
+                    localStorage.setItem('userType', 'fixer');
+                    
+                    alert('Fixer account created successfully!\n\nName: ' + data.data.fixer.name + '\nEmail: ' + data.data.fixer.email + '\n\nYou can now access the fixer profile!');
+                    
+                    // Try to show profile again
+                    setTimeout(() => {
+                        showProfileModal();
+                    }, 1000);
+                    } else {
+                    const errorData = await response.json();
+                    console.error('❌ Error registering as fixer:', errorData);
+                    alert('Error creating fixer account: ' + (errorData.message || 'Unknown error'));
+                    }
+            } catch (error) {
+                console.error('❌ Error registering as fixer:', error);
+                alert('Error creating fixer account. Please try again.');
+            }
+        }
+        
+        // Create test fixer profile
+        async function createTestFixerProfile() {
+            try {
+                console.log('🔧 Creating test fixer profile...');
+                
+                const response = await fetch('https://fixghar.onrender.com/api/create-test-fixer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Test fixer created:', data);
+                    alert('Test fixer profile created successfully!\n\nName: ' + data.data.name + '\nEmail: ' + data.data.email + '\n\nYou can now try accessing the profile again.');
+                } else {
+                    const errorData = await response.json();
+                    console.error('❌ Error creating test fixer:', errorData);
+                    alert('Error creating test fixer: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('❌ Error creating test fixer:', error);
+                alert('Error creating test fixer. Please try again.');
+            }
+        }
+        
+        // Profile helper functions
+        function editProfilePicture() {
+            alert('Profile picture editor would open here!');
+        }
+        
+        function toggleProfileStatus() {
+            const statusDot = document.getElementById('profileStatusDot');
+            const statusText = document.getElementById('profileStatusText');
+            const button = event.target;
+            
+            if (statusDot.style.background === 'rgb(40, 167, 69)') {
+                // Go offline
+                statusDot.style.background = '#dc3545';
+                statusText.textContent = 'Offline';
+                statusText.style.color = '#dc3545';
+                button.textContent = 'Go Online';
+                button.style.background = '#dc3545';
+                    } else {
+                // Go online
+                statusDot.style.background = '#28a745';
+                statusText.textContent = 'Online & Available';
+                statusText.style.color = '#28a745';
+                button.textContent = 'Go Offline';
+                button.style.background = '#28a745';
+            }
+        }
+        
+        function removeService(element) {
+            element.parentElement.remove();
+        }
+        
+        async function saveProfile() {
+            try {
+                console.log('🔧 Save Profile button clicked!');
+                console.log('🔧 Starting save profile process...');
+                
+                const token = localStorage.getItem('fixghar_token');
+                console.log('🔑 Token exists:', !!token);
+                console.log('🔑 Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'No token');
+                
+                if (!token) {
+                    alert('Please login first!');
+                    return;
+                }
+
+                // Get form data from the modal inputs
+                const modal = document.querySelector('.modal-overlay');
+                if (!modal) {
+                    alert('Profile modal not found!');
+                    return;
+                }
+
+                // Get form data using specific IDs
+                const nameField = modal.querySelector('#profileName');
+                const emailField = modal.querySelector('#profileEmail');
+                const phoneField = modal.querySelector('#profilePhone');
+                const serviceCategoryField = modal.querySelector('#profileServiceCategory');
+                const experienceField = modal.querySelector('#profileExperience');
+                const skillsField = modal.querySelector('#profileSkills');
+                const areasField = modal.querySelector('#profileAreas');
+
+                console.log('🔍 Form fields found:', {
+                    name: nameField?.value,
+                    email: emailField?.value,
+                    phone: phoneField?.value,
+                    serviceCategory: serviceCategoryField?.value,
+                    experience: experienceField?.value,
+                    skills: skillsField?.value,
+                    areas: areasField?.value
+                });
+
+                const profileData = {
+                    name: nameField?.value || '',
+                    email: emailField?.value || '',
+                    phone: phoneField?.value || '',
+                    serviceCategory: serviceCategoryField?.value || '',
+                    experience: parseInt(experienceField?.value || 0),
+                    skills: skillsField?.value ? skillsField.value.split(',').map(s => s.trim()) : [],
+                    areas: areasField?.value ? areasField.value.split(',').map(s => s.trim()) : []
+                };
+
+                console.log('💾 Saving profile data:', profileData);
+
+                const response = await fetch('https://fixghar.onrender.com/api/fixers/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                console.log('📡 Save response status:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Profile saved successfully:', data);
+                    
+                    // Update localStorage with new data
+                    const updatedUserData = {
+                        ...JSON.parse(localStorage.getItem('fixghar_user') || '{}'),
+                        name: profileData.name,
+                        email: profileData.email,
+                        phone: profileData.phone,
+                        serviceCategory: profileData.serviceCategory,
+                        professionalInfo: {
+                            experience: profileData.experience,
+                            skills: profileData.skills
+                        },
+                        areas: profileData.areas
+                    };
+                    
+                    localStorage.setItem('fixghar_user', JSON.stringify(updatedUserData));
+                    
+                    // Update dashboard with new data
+                    updateDashboardWithFixerData(updatedUserData);
+                    
+                    // Create a beautiful success message
+                    const successMessage = `
+🎉 PROFILE SAVED SUCCESSFULLY! 🎉
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Your fixer profile has been updated and saved to the database!
+
+📋 SAVED INFORMATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 Name: ${profileData.name || 'Not specified'}
+🔧 Service: ${profileData.serviceCategory || 'Not specified'}
+⭐ Experience: ${profileData.experience || 0} years
+🛠️ Skills: ${profileData.skills.length > 0 ? profileData.skills.join(', ') : 'Not specified'}
+📍 Areas: ${profileData.areas.length > 0 ? profileData.areas.join(', ') : 'Not specified'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 Your profile is now LIVE and visible to customers!
+💼 You can start receiving booking requests immediately!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    `;
+                    
+                    // Show beautiful success modal instead of alert
+                    setTimeout(() => {
+                        showSuccessModal(profileData);
+                    }, 100);
+                    closeModal();
+                } else {
+                    const errorData = await response.json();
+                    console.error('❌ Save error:', errorData);
+                    alert('❌ Profile Save Failed!\n\n🔍 Error Details:\n' + (errorData.message || 'Unknown error') + '\n\n💡 Please try again or contact support if the problem persists.');
+                }
+            } catch (error) {
+                console.error('❌ Error saving profile:', error);
+                alert('❌ Network Error!\n\n🔧 Unable to connect to the server.\n\n💡 Please check your internet connection and try again.\n\n🔄 If the problem continues, please refresh the page.');
+            }
+        }
+        
+        // Show beautiful success modal
+        function showSuccessModal(profileData) {
+            console.log('🎉 Showing success modal with data:', profileData);
+            const successContent = `
+                <div style="text-align: center; padding: 40px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(40, 167, 69, 0.3);">
+                    <div style="font-size: 60px; margin-bottom: 20px; animation: bounce 1s infinite;">🎉</div>
+                    <h2 style="margin: 0 0 20px 0; font-size: 28px; font-weight: bold;">PROFILE SAVED SUCCESSFULLY!</h2>
+                    
+                    <div style="background: rgba(255, 255, 255, 0.2); padding: 25px; border-radius: 15px; margin: 25px 0; backdrop-filter: blur(10px);">
+                        <h3 style="margin: 0 0 20px 0; font-size: 20px; display: flex; align-items: center; justify-content: center;">
+                            <span style="margin-right: 10px;">📋</span> SAVED INFORMATION
+                        </h3>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left;">
+                            <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">👤 NAME</div>
+                                <div style="font-weight: bold; font-size: 16px;">${profileData.name || 'Not specified'}</div>
+                                                </div>
+                                                
+                            <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">🔧 SERVICE</div>
+                                <div style="font-weight: bold; font-size: 16px;">${profileData.serviceCategory || 'Not specified'}</div>
+                                                </div>
+                                                
+                            <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">⭐ EXPERIENCE</div>
+                                <div style="font-weight: bold; font-size: 16px;">${profileData.experience || 0} years</div>
+                                                </div>
+                                                
+                            <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">🛠️ SKILLS</div>
+                                <div style="font-weight: bold; font-size: 16px;">${profileData.skills.length > 0 ? profileData.skills.join(', ') : 'Not specified'}</div>
+                                            </div>
+                                        </div>
+                                        
+                        <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; margin-top: 15px;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">📍 SERVICE AREAS</div>
+                            <div style="font-weight: bold; font-size: 16px;">${profileData.areas.length > 0 ? profileData.areas.join(', ') : 'Not specified'}</div>
+                                        </div>
+                                    </div>
+                    
+                    <div style="background: rgba(255, 255, 255, 0.2); padding: 20px; border-radius: 15px; margin: 20px 0;">
+                        <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">🚀 Your profile is now LIVE!</div>
+                        <div style="font-size: 14px; opacity: 0.9;">💼 You can start receiving booking requests immediately!</div>
+                    </div>
+                    
+                    <button onclick="closeModal()" style="background: white; color: #28a745; border: none; padding: 15px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 0, 0, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(0, 0, 0, 0.2)'">
+                        ✨ CONTINUE
+                        </button>
+                </div>
+            `;
+            
+            createModal(successContent);
+        }
+        
+        // Accept service request
+        async function acceptServiceRequest(requestId) {
+            try {
+                console.log('✅ Accepting service request:', requestId);
+                
+                const token = localStorage.getItem('fixghar_token');
+                if (!token) {
+                    alert('Please login first!');
+                    return;
+                }
+
+                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'accepted',
+                        fixer: 'current' // This will be set to the current fixer's ID on backend
+                    })
+                });
+
+                if (response.ok) {
+                    alert('✅ Service request accepted successfully!\n\nYou will be assigned to this booking.');
+                    showServiceRequests(); // Refresh the list
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Error accepting request: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error accepting service request:', error);
+                alert('Error accepting service request. Please try again.');
+            }
+        }
+        
+        // Reject service request
+        async function rejectServiceRequest(requestId) {
+            try {
+                console.log('❌ Rejecting service request:', requestId);
+                
+                const token = localStorage.getItem('fixghar_token');
+                if (!token) {
+                    alert('Please login first!');
+                    return;
+                }
+
+                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'rejected'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('❌ Service request rejected.\n\nThe request has been declined.');
+                    showServiceRequests(); // Refresh the list
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Error rejecting request: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error rejecting service request:', error);
+                alert('Error rejecting service request. Please try again.');
+            }
+        }
+        
+        // View service request details
+        function viewServiceRequestDetails(requestId) {
+            alert('📋 Service Request Details\n\nRequest ID: ' + requestId + '\n\nDetailed view will be implemented here.');
+        }
+        
+        // Auto-load fixer profile when dashboard loads
+        async function loadFixerProfileOnStartup() {
+            try {
+                const userType = localStorage.getItem('userType');
+                const token = localStorage.getItem('fixghar_token');
+                const userData = JSON.parse(localStorage.getItem('fixghar_user') || '{}');
+                
+                console.log('🚀 Dashboard startup - userType:', userType, 'token exists:', !!token);
+                console.log('👤 Current user data:', userData);
+                
+                if (userType === 'fixer' && token) {
+                    console.log('🔧 Auto-loading fixer profile...');
+                    console.log('🔑 Token (first 20 chars):', token.substring(0, 20) + '...');
+                    
+                    // Try to load profile data
+                    const response = await fetch('https://fixghar.onrender.com/api/fixers/profile', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    console.log('📡 Profile API response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ Fixer profile loaded successfully:', data.data);
+                        
+                        // Update the dashboard with real data
+                        updateDashboardWithFixerData(data.data);
+            } else {
+                        const errorData = await response.json();
+                        console.log('⚠️ Could not load fixer profile:', errorData);
+                        
+                        // Use localStorage data as fallback
+                        if (userData && userData.name) {
+                            console.log('🔄 Using localStorage data as fallback:', userData);
+                            updateDashboardWithFixerData(userData);
+                        }
+                }
+            } else {
+                    console.log('❌ Not a fixer or no token - userType:', userType, 'token exists:', !!token);
+                }
+            } catch (error) {
+                console.error('❌ Error loading fixer profile on startup:', error);
+                
+                // Use localStorage data as fallback
+                const userData = JSON.parse(localStorage.getItem('fixghar_user') || '{}');
+                if (userData && userData.name) {
+                    console.log('🔄 Using localStorage data as fallback after error:', userData);
+                    updateDashboardWithFixerData(userData);
+                }
+            }
+        }
+        
+        // Update dashboard with real fixer data
+        function updateDashboardWithFixerData(fixer) {
+            try {
+                // Update welcome message
+                const welcomeElement = document.querySelector('.welcome-section h1');
+                if (welcomeElement && fixer.name) {
+                    welcomeElement.innerHTML = `Welcome Back, <span class="highlight">${fixer.name}!</span>`;
+                }
+                
+                // Update profile button
+                const profileButton = document.querySelector('.show-profile-btn');
+                if (profileButton && fixer.name) {
+                    profileButton.innerHTML = `<i class="fas fa-user"></i> ${fixer.name}`;
+                }
+                
+                // Update online status
+                const isOnline = localStorage.getItem('fixer_online') === 'true';
+                const toggleSwitch = document.getElementById('toggleSwitch');
+                const availabilityText = document.getElementById('availabilityText');
+                
+                if (toggleSwitch && availabilityText) {
+                    if (isOnline) {
+                        toggleSwitch.classList.add('online');
+                        availabilityText.textContent = 'Online';
+                    } else {
+                        toggleSwitch.classList.remove('online');
+                        availabilityText.textContent = 'Go Online';
+                    }
+                }
+                
+                console.log('✅ Dashboard updated with fixer data:', fixer.name);
+            } catch (error) {
+                console.error('❌ Error updating dashboard:', error);
+            }
+        }
+        
+        // Sample data that matches the actual database data
+        const sampleJobRequests = [
+            {
+                id: 'req1',
+                serviceType: 'Plumbing Repair',
+                customer: 'Priya Sharma',
+                location: '123 Main Street, Noida, Uttar Pradesh',
+                time: '2:30 PM',
+                status: 'urgent'
+            },
+            {
+                id: 'req2',
+                serviceType: 'AC Repair',
+                customer: 'Amit Kumar',
+                location: '456 Park Avenue, Greater Noida, Uttar Pradesh',
+                time: '4:00 PM',
+                status: 'normal'
+            }
+        ];
+
+        const sampleOngoingJobs = [
+            {
+                id: 'job1',
+                serviceType: 'Electrical Installation',
+                customer: 'Ravi Singh',
+                location: '789 Sector 18, Noida, Uttar Pradesh',
+                progress: 60,
+                status: 'in-progress'
+            }
+        ];
+
+        // Function to render job request cards
+        function renderJobRequests(requests) {
+            const container = document.getElementById('newJobRequests');
+            if (!container) return;
+
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666; background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                        <h3 style="color: #333; margin-bottom: 10px;">No New Requests</h3>
+                        <p>There are currently no new job requests available.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requests.map(request => `
+                <div class="request-card" style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid #ef860d;">
+                    <div class="request-header" style="margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #333; font-size: 18px; font-weight: bold;">${request.serviceType}</h3>
+                    </div>
+                    <div class="request-details" style="margin-bottom: 20px;">
+                        <p style="margin: 8px 0; color: #333;"><strong>Customer:</strong> ${request.customer}</p>
+                        <p style="margin: 8px 0; color: #333;"><strong>Location:</strong> ${request.location}</p>
+                        <p style="margin: 8px 0; color: #333;"><strong>Time:</strong> ${request.time}</p>
+                    </div>
+                    <div class="request-actions" style="display: flex; gap: 10px;">
+                        <button class="btn-accept" onclick="acceptRequest('${request.id}')" style="background: #ef860d; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; transition: all 0.3s;" onmouseover="this.style.background='#d6760a'" onmouseout="this.style.background='#ef860d'">
+                            Accept
+                        </button>
+                        <button class="btn-reject" onclick="rejectRequest('${request.id}')" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                            Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Function to render ongoing job cards
+        function renderOngoingJobs(jobs) {
+            const container = document.getElementById('ongoingJobs');
+            if (!container) return;
+
+            if (jobs.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666; background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔧</div>
+                        <h3 style="color: #333; margin-bottom: 10px;">No Ongoing Jobs</h3>
+                        <p>You don't have any ongoing jobs at the moment.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = jobs.map(job => `
+                <div class="job-card" style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid #28a745;">
+                    <div class="job-header" style="margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #333; font-size: 18px; font-weight: bold;">${job.serviceType}</h3>
+                    </div>
+                    <div class="job-details" style="margin-bottom: 20px;">
+                        <p style="margin: 8px 0; color: #333;"><strong>Customer:</strong> ${job.customer}</p>
+                        <p style="margin: 8px 0; color: #333;"><strong>Location:</strong> ${job.location}</p>
+                        <p style="margin: 8px 0; color: #333;"><strong>Progress:</strong> ${job.progress}% Complete</p>
+                    </div>
+                    <div class="progress-container" style="margin-bottom: 20px;">
+                        <div class="progress-bar" style="width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
+                            <div class="progress-fill" style="width: ${job.progress}%; height: 100%; background: #ef860d; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div class="job-actions" style="display: flex; gap: 10px;">
+                        <button class="btn-update" onclick="updateJobProgress('${job.id}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; transition: all 0.3s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
+                            Update Progress
+                        </button>
+                        <button class="btn-contact" onclick="contactCustomer('${job.id}')" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; transition: all 0.3s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                            Contact
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Function to load real data from API
+        async function loadRealDashboardData() {
+            try {
+                console.log('📊 Loading real dashboard data from API...');
+                
+                const token = localStorage.getItem('fixghar_token');
+                console.log('🔑 Token exists:', !!token);
+                console.log('🔑 Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'No token');
+                
+                // Note: The service-requests endpoint is public, so we can load data even without a token
+                console.log('📊 Loading service requests data...');
+
+                // Load service requests from API
+                console.log('📡 Making API call to: https://fixghar.onrender.com/api/fixers/service-requests');
+                
+                try {
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    
+                    // Add authorization header only if token exists
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    
+                    const requestsResponse = await fetch('https://fixghar.onrender.com/api/fixers/service-requests', {
+                        headers: headers,
+                        timeout: 5000 // 5 second timeout
+                    });
+
+                    console.log('📡 Service requests response status:', requestsResponse.status);
+                    console.log('📡 Service requests response ok:', requestsResponse.ok);
+
+                    if (requestsResponse.ok) {
+                        const requestsData = await requestsResponse.json();
+                        console.log('📋 Raw API response:', requestsData);
+                        const apiRequests = requestsData.data || [];
+                        console.log('📋 API requests count:', apiRequests.length);
+                        
+                        if (apiRequests.length > 0) {
+                            // Transform API data to match our format
+                            const transformedRequests = apiRequests.slice(0, 2).map(request => {
+                                const userInfo = request.user || {};
+                                const serviceInfo = request.service || {};
+                                
+                                console.log('🔄 Transforming request:', {
+                                    id: request._id,
+                                    service: serviceInfo.name,
+                                    customer: userInfo.name,
+                                    address: request.bookingDetails?.address || request.address
+                                });
+                                
+                                return {
+                                    id: request._id,
+                                    serviceType: serviceInfo.name || 'General Service',
+                                    customer: userInfo.name || 'Unknown Customer',
+                                    location: request.bookingDetails?.address ? 
+                                        `${request.bookingDetails.address.street || ''}, ${request.bookingDetails.address.city || ''}, ${request.bookingDetails.address.state || ''}`.trim() :
+                                        request.address || 'Location not specified',
+                                    time: request.bookingDetails?.preferredTime || request.preferredTime || 'Flexible',
+                                    status: request.status || 'normal'
+                                };
+                            });
+                            
+                            console.log('✅ Transformed requests:', transformedRequests);
+                            renderJobRequests(transformedRequests);
+                        } else {
+                            console.log('⚠️ No API requests found, using sample data');
+                            renderJobRequests(sampleJobRequests);
+                        }
+                    } else {
+                        const errorText = await requestsResponse.text();
+                        console.log('❌ API Error response:', errorText);
+                        console.log('⚠️ Could not load API requests, using sample data');
+                        renderJobRequests(sampleJobRequests);
+                    }
+                } catch (error) {
+                    console.log('❌ Network error:', error.message);
+                    console.log('⚠️ Could not connect to API, using sample data');
+                    renderJobRequests(sampleJobRequests);
+                }
+
+                // Load ongoing jobs (this would be from a different endpoint)
+                // For now, use sample data
+                renderOngoingJobs(sampleOngoingJobs);
+                
+                console.log('✅ Dashboard data loaded successfully');
+            } catch (error) {
+                console.error('❌ Error loading real dashboard data:', error);
+                // Fallback to sample data
+                renderJobRequests(sampleJobRequests);
+                renderOngoingJobs(sampleOngoingJobs);
+            }
+        }
+
+        // Function to load and display dashboard data
+        async function loadDashboardData() {
+            try {
+                console.log('📊 Loading dashboard data...');
+                
+                // Try to load real data first, fallback to sample data
+                await loadRealDashboardData();
+                
+                console.log('✅ Dashboard data loaded successfully');
+            } catch (error) {
+                console.error('❌ Error loading dashboard data:', error);
+                // Fallback to sample data
+                renderJobRequests(sampleJobRequests);
+                renderOngoingJobs(sampleOngoingJobs);
+            }
+        }
+
+        // Function to update service requests count
+        function updateServiceRequestsCount() {
+            // Get count from chatbot if available
+            if (window.chatbot && window.chatbot.serviceRequests) {
+                const count = window.chatbot.serviceRequests.length;
+                
+                // Update badge in navigation
+                const badge = document.getElementById('serviceRequestsBadge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'inline' : 'none';
+                }
+                
+                // Update stat card
+                const statCount = document.getElementById('newRequestsCount');
+                if (statCount) {
+                    statCount.textContent = count;
+                }
+                
+                console.log('✅ Updated service requests count:', count);
+            } else {
+                // Fallback: no sample data
+                const sampleCount = 0; // No sample data, only real API data
+                
+                const badge = document.getElementById('serviceRequestsBadge');
+                if (badge) {
+                    badge.textContent = sampleCount;
+                    badge.style.display = sampleCount > 0 ? 'inline' : 'none';
+                }
+                
+                const statCount = document.getElementById('newRequestsCount');
+                if (statCount) {
+                    statCount.textContent = sampleCount;
+                }
+                
+                console.log('⚠️ Using sample service requests count:', sampleCount);
+            }
+        }
+
+        // Function to update profile stats
+        function updateProfileStats() {
+            if (window.chatbot && window.chatbot.fixerBookings) {
+                const bookings = window.chatbot.fixerBookings;
+                
+                const totalJobs = bookings.length;
+                const completedJobs = bookings.filter(booking => booking.status === 'completed').length;
+                
+                // Update profile stats
+                const profileTotalJobs = document.getElementById('profileTotalJobs');
+                const profileCompletedJobs = document.getElementById('profileCompletedJobs');
+                
+                if (profileTotalJobs) profileTotalJobs.textContent = totalJobs;
+                if (profileCompletedJobs) profileCompletedJobs.textContent = completedJobs;
+                
+                console.log('✅ Updated profile stats:', { totalJobs, completedJobs });
+            } else {
+                // Fallback: show 0
+                const profileTotalJobs = document.getElementById('profileTotalJobs');
+                const profileCompletedJobs = document.getElementById('profileCompletedJobs');
+                
+                if (profileTotalJobs) profileTotalJobs.textContent = '0';
+                if (profileCompletedJobs) profileCompletedJobs.textContent = '0';
+                
+                console.log('⚠️ No data available for profile stats');
+            }
+        }
+
+        // Function to update dashboard stats
+        function updateDashboardStats() {
+            console.log('📊 Updating dashboard stats...');
+            
+            if (window.chatbot) {
+                // Update New Requests (already handled by updateServiceRequestsCount)
+                updateServiceRequestsCount();
+                
+                // Update Active Jobs
+                if (window.chatbot.fixerBookings) {
+                    const bookings = window.chatbot.fixerBookings;
+                    const activeJobs = bookings.filter(booking => 
+                        booking.status === 'pending' || booking.status === 'in-progress' || booking.status === 'confirmed'
+                    ).length;
+                    
+                    const activeJobsElement = document.getElementById('activeJobsCount');
+                    if (activeJobsElement) {
+                        activeJobsElement.textContent = activeJobs;
+                    }
+                }
+                
+                // Update Today's Earnings
+                if (window.chatbot.fixerBookings) {
+                    const bookings = window.chatbot.fixerBookings;
+                    const today = new Date();
+                    const todayStr = today.toISOString().split('T')[0];
+                    
+                    const todaysEarnings = bookings
+                        .filter(booking => {
+                            if (booking.status === 'completed' && booking.amount) {
+                                const bookingDate = booking.createdAt ? 
+                                    new Date(booking.createdAt).toISOString().split('T')[0] : null;
+                                return bookingDate === todayStr;
+                            }
+                            return false;
+                        })
+                        .reduce((sum, booking) => sum + (booking.amount || 0), 0);
+                    
+                    const todaysEarningsElement = document.getElementById('todaysEarnings');
+                    if (todaysEarningsElement) {
+                        todaysEarningsElement.textContent = `₹${todaysEarnings.toLocaleString()}`;
+                    }
+                }
+                
+                // Update Average Rating
+                if (window.chatbot.fixerBookings) {
+                    const bookings = window.chatbot.fixerBookings;
+                    const reviewedBookings = bookings.filter(booking => booking.rating);
+                    
+                    let averageRating = 0;
+                    if (reviewedBookings.length > 0) {
+                        const totalRating = reviewedBookings.reduce((sum, booking) => sum + booking.rating, 0);
+                        averageRating = totalRating / reviewedBookings.length;
+                    }
+                    
+                    const averageRatingElement = document.getElementById('averageRating');
+                    if (averageRatingElement) {
+                        averageRatingElement.textContent = averageRating > 0 ? averageRating.toFixed(1) : '0.0';
+                    }
+                }
+                
+                console.log('✅ Dashboard stats updated');
+            } else {
+                // Fallback: show 0 values
+                const activeJobsElement = document.getElementById('activeJobsCount');
+                const todaysEarningsElement = document.getElementById('todaysEarnings');
+                const averageRatingElement = document.getElementById('averageRating');
+                
+                if (activeJobsElement) activeJobsElement.textContent = '0';
+                if (todaysEarningsElement) todaysEarningsElement.textContent = '₹0';
+                if (averageRatingElement) averageRatingElement.textContent = '0.0';
+                
+                console.log('⚠️ No chatbot data available for dashboard stats');
+            }
+        }
+
+        // Function to refresh service requests count
+        function refreshServiceRequestsCount() {
+            if (window.chatbot && window.chatbot.refreshServiceRequests) {
+                window.chatbot.refreshServiceRequests().then(() => {
+                    updateServiceRequestsCount();
+                });
+            } else {
+                updateServiceRequestsCount();
+            }
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Fixer Dashboard DOM loaded');
+            
+            // Check authentication
+            const userType = localStorage.getItem('userType');
+            const token = localStorage.getItem('fixghar_token');
+            
+            if (!token) {
+                alert('Please login first!');
+                window.location.href = '/';
+                return;
+            }
+            
+            if (userType !== 'fixer') {
+                alert('This dashboard is only for fixers. You are logged in as: ' + (userType || 'user'));
+                window.location.href = '/pages/user-dashboard.html';
+                return;
+            }
+            
+            // Load dashboard data
+            loadDashboardData();
+            
+            // Update service requests count and profile stats
+            setTimeout(() => {
+                updateServiceRequestsCount();
+                updateProfileStats();
+                updateDashboardStats();
+            }, 2000);
+            
+            // Set up periodic updates for service requests count and profile stats
+            setInterval(() => {
+                updateServiceRequestsCount();
+                updateProfileStats();
+                updateDashboardStats();
+            }, 5000); // Update every 5 seconds for real-time updates
+            
+            // Auto-load fixer profile
+            setTimeout(() => {
+                loadFixerProfileOnStartup();
+        }, 1000);
+        });
+        
+        // Function to load analytics data
+        function loadAnalyticsData() {
+            console.log('📊 Loading analytics data...');
+            
+            if (window.chatbot && window.chatbot.fixerBookings) {
+                const bookings = window.chatbot.fixerBookings;
+                
+                // Calculate analytics from real data
+                const totalJobs = bookings.length;
+                const completedJobs = bookings.filter(booking => booking.status === 'completed').length;
+                
+                // Calculate average rating (if available in booking data)
+                const ratings = bookings
+                    .filter(booking => booking.rating)
+                    .map(booking => booking.rating);
+                const averageRating = ratings.length > 0 
+                    ? (ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length).toFixed(1)
+                    : '4.8'; // Default rating if no ratings available
+                
+                // Calculate total earnings
+                const totalEarnings = bookings
+                    .filter(booking => booking.status === 'completed' && booking.amount)
+                    .reduce((sum, booking) => sum + (booking.amount || 0), 0);
+                
+                // Update analytics display
+                updateAnalyticsDisplay({
+                    totalJobs,
+                    completedJobs,
+                    averageRating,
+                    totalEarnings
+                });
+                
+                console.log('✅ Analytics data loaded:', {
+                    totalJobs,
+                    completedJobs,
+                    averageRating,
+                    totalEarnings
+                });
+            } else {
+                console.log('⚠️ No chatbot data available, using fallback analytics');
+                updateAnalyticsDisplay({
+                    totalJobs: 0,
+                    completedJobs: 0,
+                    averageRating: '0.0',
+                    totalEarnings: 0
+                });
+            }
+        }
+
+        // Function to update analytics display
+        function updateAnalyticsDisplay(data) {
+            const totalJobsEl = document.getElementById('analyticsTotalJobs');
+            const completedJobsEl = document.getElementById('analyticsCompletedJobs');
+            const averageRatingEl = document.getElementById('analyticsAverageRating');
+            const totalEarningsEl = document.getElementById('analyticsTotalEarnings');
+            
+            if (totalJobsEl) totalJobsEl.textContent = data.totalJobs;
+            if (completedJobsEl) completedJobsEl.textContent = data.completedJobs;
+            if (averageRatingEl) averageRatingEl.textContent = data.averageRating;
+            if (totalEarningsEl) totalEarningsEl.textContent = `₹${data.totalEarnings.toLocaleString()}`;
+        }
+
+        // Function to refresh analytics data
+        function refreshAnalyticsData() {
+            console.log('🔄 Refreshing analytics data...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    loadAnalyticsData();
+                });
+            } else {
+                loadAnalyticsData();
+            }
+        }
+
+        // Function to load schedule data
+        function loadScheduleData() {
+            console.log('📅 Loading schedule data...');
+            
+            const scheduleContainer = document.getElementById('scheduleContainer');
+            if (!scheduleContainer) {
+                console.log('❌ Schedule container not found');
+                return;
+            }
+            
+            if (window.chatbot && window.chatbot.fixerBookings) {
+                const bookings = window.chatbot.fixerBookings;
+                
+                // Filter bookings for today
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                
+                const todayBookings = bookings.filter(booking => {
+                    if (booking.preferredDate) {
+                        const bookingDate = new Date(booking.preferredDate).toISOString().split('T')[0];
+                        return bookingDate === todayStr;
+                    }
+                    return false;
+                });
+                
+                // Sort by time
+                todayBookings.sort((a, b) => {
+                    const timeA = a.preferredTime || '00:00';
+                    const timeB = b.preferredTime || '00:00';
+                    return timeA.localeCompare(timeB);
+                });
+                
+                if (todayBookings.length > 0) {
+                    const scheduleHTML = todayBookings.map(booking => {
+                        const time = booking.preferredTime || 'TBD';
+                        const service = booking.service?.name || booking.service || 'Service';
+                        const location = booking.address || 'Location TBD';
+                        const status = booking.status || 'pending';
+                        
+                        // Status color coding
+                        let statusColor = '#6c757d'; // default gray
+                        if (status === 'completed') statusColor = '#28a745';
+                        else if (status === 'in-progress') statusColor = '#17a2b8';
+                        else if (status === 'confirmed') statusColor = '#007bff';
+                        else if (status === 'pending') statusColor = '#ffc107';
+                        
+                        return `
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid ${statusColor};">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong style="color: #333; font-size: 16px;">${time}</strong>
+                                        <div style="color: #666; margin-top: 5px;">
+                                            <strong>${service}</strong> - ${location}
+                                        </div>
+                                        <div style="color: #888; font-size: 12px; margin-top: 3px;">
+                                            Status: <span style="color: ${statusColor}; font-weight: bold;">${status.toUpperCase()}</span>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="color: #666; font-size: 12px;">Job ID: #${booking.id || 'N/A'}</div>
+                                        ${booking.amount ? `<div style="color: #28a745; font-weight: bold; margin-top: 3px;">₹${booking.amount}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    scheduleContainer.innerHTML = scheduleHTML;
+                    console.log('✅ Schedule data loaded:', todayBookings.length, 'bookings for today');
+                } else {
+                    scheduleContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-calendar-times" style="font-size: 48px; margin-bottom: 20px; color: #ddd;"></i>
+                            <h3>No Schedule for Today</h3>
+                            <p>You don't have any bookings scheduled for today.</p>
+                            <p style="color: #888; font-size: 14px; margin-top: 10px;">Check "Service Requests" to accept new jobs!</p>
+                        </div>
+                    `;
+                    console.log('📅 No bookings scheduled for today');
+                }
+            } else {
+                scheduleContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px; color: #ffc107;"></i>
+                        <h3>No Data Available</h3>
+                        <p>Unable to load schedule data. Please try refreshing.</p>
+                    </div>
+                `;
+                console.log('⚠️ No chatbot data available for schedule');
+            }
+        }
+
+        // Function to refresh schedule data
+        function refreshScheduleData() {
+            console.log('🔄 Refreshing schedule data...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    loadScheduleData();
+                });
+            } else {
+                loadScheduleData();
+            }
+        }
+
+        // Function to load earnings data
+        function loadEarningsData() {
+            console.log('💰 Loading earnings data...');
+            
+            const earningsContainer = document.getElementById('earningsContainer');
+            const earningsThisMonth = document.getElementById('earningsThisMonth');
+            
+            if (!earningsContainer || !earningsThisMonth) {
+                console.log('❌ Earnings containers not found');
+                return;
+            }
+            
+            if (window.chatbot && window.chatbot.fixerBookings) {
+                const bookings = window.chatbot.fixerBookings;
+                
+                // Filter completed bookings with amounts
+                const completedBookings = bookings.filter(booking => 
+                    booking.status === 'completed' && booking.amount
+                );
+                
+                // Calculate this month's earnings
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth();
+                const currentYear = currentDate.getFullYear();
+                
+                const thisMonthEarnings = completedBookings
+                    .filter(booking => {
+                        if (booking.createdAt) {
+                            const bookingDate = new Date(booking.createdAt);
+                            return bookingDate.getMonth() === currentMonth && 
+                                   bookingDate.getFullYear() === currentYear;
+                        }
+                        return false;
+                    })
+                    .reduce((sum, booking) => sum + (booking.amount || 0), 0);
+                
+                // Get recent payments (last 5 completed bookings)
+                const recentPayments = completedBookings
+                    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                    .slice(0, 5);
+                
+                // Update this month's earnings
+                earningsThisMonth.textContent = `₹${thisMonthEarnings.toLocaleString()}`;
+                
+                if (recentPayments.length > 0) {
+                    const paymentsHTML = recentPayments.map(booking => {
+                        const serviceName = booking.service?.name || booking.service || 'Service';
+                        const amount = booking.amount || 0;
+                        const date = booking.createdAt ? 
+                            new Date(booking.createdAt).toLocaleDateString() : 'N/A';
+                        
+                        return `
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: bold; color: #333;">${serviceName}</div>
+                                    <div style="font-size: 12px; color: #666; margin-top: 3px;">${date}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: #28a745; font-size: 16px;">₹${amount.toLocaleString()}</div>
+                                    <div style="font-size: 12px; color: #666; margin-top: 3px;">Completed</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    earningsContainer.innerHTML = paymentsHTML;
+                    console.log('✅ Earnings data loaded:', {
+                        thisMonthEarnings,
+                        recentPayments: recentPayments.length
+                    });
+                } else {
+                    earningsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-wallet" style="font-size: 48px; margin-bottom: 20px; color: #ddd;"></i>
+                            <h3>No Payments Yet</h3>
+                            <p>You haven't completed any jobs yet.</p>
+                            <p style="color: #888; font-size: 14px; margin-top: 10px;">Complete jobs to see your earnings here!</p>
+                        </div>
+                    `;
+                    console.log('💰 No completed bookings found');
+                }
+            } else {
+                earningsThisMonth.textContent = '₹0';
+                earningsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px; color: #ffc107;"></i>
+                        <h3>No Data Available</h3>
+                        <p>Unable to load earnings data. Please try refreshing.</p>
+                    </div>
+                `;
+                console.log('⚠️ No chatbot data available for earnings');
+            }
+        }
+
+        // Function to refresh earnings data
+        function refreshEarningsData() {
+            console.log('🔄 Refreshing earnings data...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    loadEarningsData();
+                });
+            } else {
+                loadEarningsData();
+            }
+        }
+
+        // Function to load reviews data
+        function loadReviewsData() {
+            console.log('⭐ Loading reviews data...');
+            
+            const reviewsContainer = document.getElementById('reviewsContainer');
+            if (!reviewsContainer) {
+                console.log('❌ Reviews container not found');
+                return;
+            }
+            
+            if (window.chatbot && window.chatbot.fixerBookings) {
+                const bookings = window.chatbot.fixerBookings;
+                
+                // Filter bookings that have reviews/ratings
+                const reviewedBookings = bookings.filter(booking => 
+                    booking.rating || booking.review || booking.feedback
+                );
+                
+                if (reviewedBookings.length > 0) {
+                    // Sort by most recent first
+                    reviewedBookings.sort((a, b) => 
+                        new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+                    );
+                    
+                    const reviewsHTML = reviewedBookings.map(booking => {
+                        const rating = booking.rating || 5; // Default to 5 stars if no rating
+                        const review = booking.review || booking.feedback || 'Great service!';
+                        const customerName = booking.user?.name || 'Customer';
+                        const serviceName = booking.service?.name || booking.service || 'Service';
+                        const date = booking.createdAt ? 
+                            new Date(booking.createdAt).toLocaleDateString() : 'N/A';
+                        
+                        // Generate star rating
+                        const stars = '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
+                        
+                        return `
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; background: #f9f9f9;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                    <div>
+                                        <div style="color: #ffc107; font-size: 18px; margin-bottom: 5px;">${stars}</div>
+                                        <div style="font-weight: bold; color: #333; font-size: 14px;">${serviceName}</div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 12px; color: #666;">
+                                        ${date}
+                                    </div>
+                                </div>
+                                <p style="margin: 10px 0; color: #555; line-height: 1.4;">"${review}"</p>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #666; font-style: italic; font-size: 14px;">- ${customerName}</span>
+                                    <div style="background: #e9ecef; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #666;">
+                                        ${rating}/5
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    reviewsContainer.innerHTML = reviewsHTML;
+                    console.log('✅ Reviews data loaded:', reviewedBookings.length, 'reviews');
+                } else {
+                    reviewsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-star" style="font-size: 48px; margin-bottom: 20px; color: #ddd;"></i>
+                            <h3>No Reviews Yet</h3>
+                            <p>You haven't received any reviews yet.</p>
+                            <p style="color: #888; font-size: 14px; margin-top: 10px;">Complete jobs to start receiving reviews from customers!</p>
+                        </div>
+                    `;
+                    console.log('⭐ No reviews found');
+                }
+            } else {
+                reviewsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px; color: #ffc107;"></i>
+                        <h3>No Data Available</h3>
+                        <p>Unable to load reviews data. Please try refreshing.</p>
+                    </div>
+                `;
+                console.log('⚠️ No chatbot data available for reviews');
+            }
+        }
+
+        // Function to refresh reviews data
+        function refreshReviewsData() {
+            console.log('🔄 Refreshing reviews data...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    loadReviewsData();
+                });
+            } else {
+                loadReviewsData();
+            }
+        }
+
+        // Function to load notifications data
+        function loadNotificationsData() {
+            console.log('🔔 Loading notifications data...');
+            
+            const notificationsContainer = document.getElementById('notificationsContainer');
+            if (!notificationsContainer) {
+                console.log('❌ Notifications container not found');
+                return;
+            }
+            
+            if (window.chatbot) {
+                const notifications = [];
+                
+                // Generate notifications from service requests
+                if (window.chatbot.serviceRequests && window.chatbot.serviceRequests.length > 0) {
+                    window.chatbot.serviceRequests.forEach(request => {
+                        const timeAgo = request.createdAt ? 
+                            getTimeAgo(new Date(request.createdAt)) : 'Recently';
+                        
+                        notifications.push({
+                            type: 'new_request',
+                            title: 'New Service Request',
+                            message: `${request.service?.name || 'Service'} request in ${request.address || 'your area'}`,
+                            time: timeAgo,
+                            icon: '🔔',
+                            color: '#007bff'
+                        });
+                    });
+                }
+                
+                // Generate notifications from completed bookings
+                if (window.chatbot.fixerBookings && window.chatbot.fixerBookings.length > 0) {
+                    const completedBookings = window.chatbot.fixerBookings.filter(booking => 
+                        booking.status === 'completed' && booking.amount
+                    );
+                    
+                    completedBookings.slice(0, 3).forEach(booking => {
+                        const timeAgo = booking.createdAt ? 
+                            getTimeAgo(new Date(booking.createdAt)) : 'Recently';
+                        
+                        notifications.push({
+                            type: 'payment',
+                            title: 'Payment Received',
+                            message: `₹${booking.amount} for ${booking.service?.name || booking.service || 'service'}`,
+                            time: timeAgo,
+                            icon: '💰',
+                            color: '#28a745'
+                        });
+                    });
+                }
+                
+                // Generate notifications from reviews
+                if (window.chatbot.fixerBookings && window.chatbot.fixerBookings.length > 0) {
+                    const reviewedBookings = window.chatbot.fixerBookings.filter(booking => 
+                        booking.rating || booking.review
+                    );
+                    
+                    reviewedBookings.slice(0, 2).forEach(booking => {
+                        const timeAgo = booking.createdAt ? 
+                            getTimeAgo(new Date(booking.createdAt)) : 'Recently';
+                        
+                        notifications.push({
+                            type: 'review',
+                            title: 'New Review Received',
+                            message: `${booking.rating || 5} star review for ${booking.service?.name || booking.service || 'service'}`,
+                            time: timeAgo,
+                            icon: '⭐',
+                            color: '#ffc107'
+                        });
+                    });
+                }
+                
+                // Sort notifications by time (most recent first)
+                notifications.sort((a, b) => {
+                    const timeA = a.time.includes('hour') ? 0 : a.time.includes('day') ? 1 : 2;
+                    const timeB = b.time.includes('hour') ? 0 : b.time.includes('day') ? 1 : 2;
+                    return timeA - timeB;
+                });
+                
+                if (notifications.length > 0) {
+                    const notificationsHTML = notifications.map(notification => `
+                        <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid ${notification.color};">
+                            <div style="display: flex; align-items: start; gap: 10px;">
+                                <div style="font-size: 20px;">${notification.icon}</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: bold; color: #333; margin-bottom: 5px;">${notification.title}</div>
+                                    <p style="margin: 5px 0; color: #555; line-height: 1.4;">${notification.message}</p>
+                                    <span style="color: #666; font-size: 12px;">${notification.time}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    notificationsContainer.innerHTML = notificationsHTML;
+                    console.log('✅ Notifications data loaded:', notifications.length, 'notifications');
+                } else {
+                    notificationsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-bell-slash" style="font-size: 48px; margin-bottom: 20px; color: #ddd;"></i>
+                            <h3>No Notifications</h3>
+                            <p>You don't have any notifications yet.</p>
+                            <p style="color: #888; font-size: 14px; margin-top: 10px;">Complete jobs and receive service requests to see notifications here!</p>
+                        </div>
+                    `;
+                    console.log('🔔 No notifications found');
+                }
+            } else {
+                notificationsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px; color: #ffc107;"></i>
+                        <h3>No Data Available</h3>
+                        <p>Unable to load notifications data. Please try refreshing.</p>
+                    </div>
+                `;
+                console.log('⚠️ No chatbot data available for notifications');
+            }
+        }
+
+        // Helper function to calculate time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInMs = now - date;
+            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const diffInDays = Math.floor(diffInHours / 24);
+            
+            if (diffInHours < 1) {
+                return 'Just now';
+            } else if (diffInHours < 24) {
+                return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+            } else if (diffInDays < 7) {
+                return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        // Function to refresh notifications data
+        function refreshNotificationsData() {
+            console.log('🔄 Refreshing notifications data...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    loadNotificationsData();
+                });
+            } else {
+                loadNotificationsData();
+            }
+        }
+
+        // Function to refresh My Jobs data
+        function refreshMyJobsData() {
+            console.log('🔄 Refreshing My Jobs data...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    showMyJobs();
+                });
+            } else {
+                showMyJobs();
+            }
+        }
+
+        // Function to refresh dashboard stats
+        function refreshDashboardStats() {
+            console.log('🔄 Refreshing dashboard stats...');
+            if (window.chatbot && window.chatbot.refreshAllData) {
+                window.chatbot.refreshAllData().then(() => {
+                    updateDashboardStats();
+                });
+            } else {
+                updateDashboardStats();
+            }
+        }
+
+        // Global function to update service requests count (can be called from chatbot)
+        window.updateServiceRequestsCount = updateServiceRequestsCount;
+        window.refreshServiceRequestsCount = refreshServiceRequestsCount;
+        window.updateProfileStats = updateProfileStats;
+        window.updateDashboardStats = updateDashboardStats;
+        window.refreshDashboardStats = refreshDashboardStats;
+        window.loadAnalyticsData = loadAnalyticsData;
+        window.refreshAnalyticsData = refreshAnalyticsData;
+        window.loadScheduleData = loadScheduleData;
+        window.refreshScheduleData = refreshScheduleData;
+        window.loadEarningsData = loadEarningsData;
+        window.refreshEarningsData = refreshEarningsData;
+        window.loadReviewsData = loadReviewsData;
+        window.refreshReviewsData = refreshReviewsData;
+        window.loadNotificationsData = loadNotificationsData;
+        window.refreshNotificationsData = refreshNotificationsData;
+        window.refreshMyJobsData = refreshMyJobsData;
+        
+        console.log('✅ Test script loaded with working functions');
+    </script>
+    
+    <style>
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(255, 107, 53, 0.6);
+            }
+        }
+
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes numberCountUp {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .success-modal {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        /* Enhanced Dashboard Stats Styling */
+        .quick-stats {
+            animation: slideInFromLeft 0.8s ease-out;
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .stat-card:hover::before {
+            left: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card .stat-icon {
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-icon {
+            transform: scale(1.1) rotate(5deg);
+            animation: glow 2s infinite;
+        }
+
+        .stat-card .stat-content h3 {
+            transition: all 0.3s ease;
+            animation: numberCountUp 0.6s ease-out;
+        }
+
+        .stat-card:hover .stat-content h3 {
+            color: #ff6b35;
+            transform: scale(1.05);
+        }
+
+        .stat-card .stat-content p {
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-content p {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Individual card enhancements */
+        .stat-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .stat-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        /* Loading animation for stats */
+        .stat-loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Responsive enhancements */
+        @media (max-width: 768px) {
+            .stat-card:hover {
+                transform: translateY(-3px) scale(1.01);
+            }
+            
+            .stat-card:hover .stat-icon {
+                transform: scale(1.05) rotate(2deg);
+            }
+        }
+    </style>
+    
+    <!-- Chatbot Scripts -->
+    <script src="../js/chatbot.js?v=2.3"></script>
+</body>
+</html>

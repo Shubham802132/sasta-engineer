@@ -1,0 +1,123 @@
+{
+    "folders": [
+        {
+            "name": "FixGhar Root",
+            "path": "."
+        },
+        {
+            "name": "Frontend",
+            "path": "./frontend"
+        },
+        {
+            "name": "Backend",
+            "path": "./backend"
+        }
+    ],
+    "settings": {
+        "liveServer.settings.port": 5511,
+        "liveServer.settings.root": "/frontend",
+        "liveServer.settings.file": "index.html",
+        "liveServer.settings.donotShowInfoMsg": true,
+        "liveServer.settings.CustomBrowser": "chrome",
+        "liveServer.settings.useLocalIp": false,
+        "liveServer.settings.https": {
+            "enable": false
+        },
+        "liveServer.settings.wait": 100,
+        "liveServer.settings.mount": [
+            ["/", "./frontend"]
+        ],
+        "files.exclude": {
+            "**/node_modules": true,
+            "**/.git": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true
+        },
+        "search.exclude": {
+            "**/node_modules": true,
+            "**/bower_components": true,
+            "**/*.code-search": true
+        },
+        "liveServer.settings.multiRootWorkspaceName": "FixGhar Root"
+    },
+    "extensions": {
+        "recommendations": [
+            "ritwickdey.liveserver",
+            "ms-vscode.vscode-json",
+            "bradlc.vscode-tailwindcss",
+            "esbenp.prettier-vscode",
+            "ms-vscode.vscode-typescript-next"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Launch FixGhar Frontend",
+                "type": "node",
+                "request": "launch",
+                "program": "${workspaceFolder}/frontend/http-server.js",
+                "cwd": "${workspaceFolder}/frontend",
+                "console": "integratedTerminal",
+                "env": {
+                    "PORT": "5510"
+                }
+            },
+            {
+                "name": "Launch FixGhar Backend",
+                "type": "node",
+                "request": "launch",
+                "program": "${workspaceFolder}/backend/server.js",
+                "cwd": "${workspaceFolder}/backend",
+                "console": "integratedTerminal",
+                "env": {
+                    "NODE_ENV": "development"
+                }
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Start FixGhar Backend",
+                "type": "shell",
+                "command": "node",
+                "args": ["server.js"],
+                "options": {
+                    "cwd": "${workspaceFolder}/backend"
+                },
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                }
+            },
+            {
+                "label": "Start FixGhar Frontend",
+                "type": "shell",
+                "command": "node",
+                "args": ["http-server.js"],
+                "options": {
+                    "cwd": "${workspaceFolder}/frontend"
+                },
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                }
+            }
+        ]
+    }
+}
+
+
+
+
+
+
+

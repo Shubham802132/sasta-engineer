@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIXGHAR - Home Repair Solutions</title>
+    <link rel="icon" type="image/logo.png" href="asset/logo.png">
+    <link rel="stylesheet" href="css/style.css?v=20250111-2">
+    <link rel="stylesheet" href="css/chatbot-styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="asset/logo.png" alt="FIXGHAR Logo" class="logo-image">
+                <h2>FIXGHAR</h2>
+            </div>
+            <button class="nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav">
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link active" onclick="showSection('home'); return false;">Home</a></li>
+                    <li><a href="#" class="nav-link" onclick="showSection('services'); return false;">Services</a></li>
+                    <li><a href="#" class="nav-link" onclick="showSection('about'); return false;">About</a></li>
+                    <li><a href="#" class="nav-link" onclick="showSection('contact'); return false;">Contact</a></li>
+                    <li><a href="/pages/user-dashboard.html" class="nav-link dashboard-link" id="dashboardLink" style="display: none;">📊 Dashboard</a></li>
+                    <li><button class="btn signup-btn" onclick="openModal()">Sign Up</button></li>
+                    <li><button class="btn login-btn" onclick="openLoginModal()">Login</button></li> 
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero section active">
+        <div class="hero-content">
+            <h1>Welcome to FIXGHAR</h1>
+            <p> Home Repair</p>
+            <p> & Maintenance Solutions</p>
+            <button class="btn-primary" onclick="openModal()">Book your 👇 Service</button>
+            
+            <!-- Location Search Section - Enhanced -->
+            <div class="location-box">
+                <div class="location-header">
+                    
+                <div class="location-input-group">
+                    <div class="location-input-wrapper">
+                        <span class="location-icon">📍</span>
+                        <input type="text" placeholder="Enter your city, area, or pincode" class="location-input" id="locationInput" />
+                    </div>
+                    <button class="location-search-btn" onclick="searchLocation()">
+                        <span class="search-icon">🔍</span>
+                        <span class="search-text">Search</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <button class="back-to-home-btn" onclick="goToHome();">← Back to Home</button>
+        <div class="container">
+            <div class="section-header">
+                <h2>Our Services</h2>
+            </div>
+            <div class="services-grid" aria-sort="ascending">
+
+                <div class="service-card" onclick="openModal()">
+                    <div class="service-icon">🔧</div>
+                    <h3>Plumbing</h3>
+                    <p>Expert plumbing services for all your home needs</p>
+                </div>
+
+<div class="service-card" onclick="openModal()">
+                    <div class="service-icon">🏠</div>
+                    <h3>Carpentry</h3>
+                    <p>Quality woodwork and furniture repair</p>
+                </div>
+
+                <div class="service-card" onclick="openModal()">
+                    <div class="service-icon">🎨🖌️</div>
+                    <h3>Painting</h3>
+                    <p>Professional painting services for your home</p>
+                </div>
+
+                <div class="service-card" onclick="openModal()">
+                    <div class="service-icon">🔨</div>
+                    <h3>General Repair</h3>
+                    <p>All types of home maintenance and repairs</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about section">
+        <button class="back-to-home-btn" onclick="goToHome();">← Back to Home</button>
+        <div class="container">
+            <div class="section-header">
+                <h2>About FIXGHAR</h2>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>FIXGHAR is your trusted partner for all home repair and maintenance needs. We provide professional, reliable, and affordable solutions to keep your home in perfect condition.</p>
+                    <ul>
+                        <li>✅ Licensed & Insured</li>
+                        <li>✅ 24/7 Emergency Service</li>
+                        <li>✅ Free Estimates</li>
+                        <li>✅ Satisfaction Guaranteed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact section">
+        <button class="back-to-home-btn" onclick="goToHome();">← Back to Home</button>
+        <div class="container">
+            <div class="section-header">
+                <h2>Contact Us</h2>
+            </div>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>Get in Touch</h3>
+                    <p>📞 Phone: +91 98765 43210</p>
+                    <p>📧 Email: info@fixghar.com</p>
+                    <p>📍 Address: Your City, State</p>
+                </div>
+                <div class="contact-form">
+                    <form>
+                        <input type="text" placeholder="Your Name" required>
+                        <input type="email" placeholder="Your Email" required>
+                        <textarea placeholder="Your Message" rows="4" required></textarea>
+                        <button type="submit" class="btn-primary">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>FIXGHAR</h3>
+                    <p>Your trusted home repair partner</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li>Plumbing</li>
+                        <li>Carpentry</li>
+                        <li>Painting</li>
+                        <li>General Repair</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p>📞 +91 98765 43210</p>
+                    <p>📧 info@fixghar.com</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="footer-social">
+                        <a href="https://facebook.com" target="_blank" aria-label="Facebook">
+                            <img src="asset/facebook.png" alt="Facebook" class="social-icon">
+                        </a>
+                        <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
+                            <img src="asset/linkedin.png" alt="LinkedIn" class="social-icon">
+                        </a>
+                        <a href="https://instagram.com" target="_blank" aria-label="Instagram">
+                            <img src="asset/insta.png" alt="Instagram" class="social-icon">
+                        </a>
+                        <a href="https://twitter.com" target="_blank" aria-label="Twitter">
+                            <img src="asset/twitter.png" alt="Twitter" class="social-icon">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 FIXGHAR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal Popup -->
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <div id="roleChooser">
+                <h3>Choose Your Role</h3>
+                <p class="role-description">Select how you want to use FIXGHAR</p>
+                <div class="role-buttons">
+                    <button id="userButton" class="user-btn" onclick="signup('User')">
+                        <div class="role-icon">👤</div>
+                        <div class="role-text">
+                            <h4>User</h4>
+                            <p>Book services for your home</p>
+                        </div>
+                    </button>
+                    <button id="fixerButton" class="fixer-btn" onclick="signup('Fixer')">
+                        <div class="role-icon">🔧</div>
+                        <div class="role-text">
+                            <h4>Fixer</h4>
+                            <p>Provide repair services</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Form -->
+            <div class="form-box" id="userForm">
+                <div class="form-header">
+                    <h2>Join as a User</h2>
+                    <p>Create your account to book home repair services</p>
+                </div>
+                <form id="userSignupForm" class="signup-form" onsubmit="handleUserSignup(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userName">Full Name *</label>
+                            <input type="text" id="userName" name="name" placeholder="Enter your full name" required>
+                            <span class="error-message" id="userNameError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userUsername">Username *</label>
+                            <input type="text" id="userUsername" name="username" placeholder="Choose a username" required>
+                            <span class="error-message" id="userUsernameError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userEmail">Email Address *</label>
+                            <input type="email" id="userEmail" name="email" placeholder="Enter your email address" required>
+                            <span class="error-message" id="userEmailError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userPhone">Phone Number *</label>
+                            <input type="tel" id="userPhone" name="phone" placeholder="Enter your phone number" required>
+                            <span class="error-message" id="userPhoneError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userPassword">Password *</label>
+                            <div class="password-input-group">
+                                <input type="password" id="userPassword" name="password" placeholder="Create a strong password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('userPassword')">
+                                    <span class="eye-icon">👁️</span>
+                                </button>
+                            </div>
+                            <span class="error-message" id="userPasswordError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userConfirmPassword">Confirm Password *</label>
+                            <div class="password-input-group">
+                                <input type="password" id="userConfirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('userConfirmPassword')">
+                                    <span class="eye-icon">👁️</span>
+                                </button>
+                            </div>
+                            <span class="error-message" id="userConfirmPasswordError"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Address Fields -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userStreet">Street Address *</label>
+                            <input type="text" id="userStreet" name="address[street]" placeholder="Enter your street address" required>
+                            <span class="error-message" id="userStreetError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userCity">City *</label>
+                            <input type="text" id="userCity" name="address[city]" placeholder="Enter your city" required>
+                            <span class="error-message" id="userCityError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userState">State *</label>
+                            <input type="text" id="userState" name="address[state]" placeholder="Enter your state" required>
+                            <span class="error-message" id="userStateError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userZipCode">Zip Code *</label>
+                            <input type="text" id="userZipCode" name="address[zipCode]" placeholder="Enter your zip code" required>
+                            <span class="error-message" id="userZipCodeError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="userTerms" required>
+                                <span class="checkmark"></span>
+                                I agree to the <a href="#" class="terms-link">Terms & Conditions</a> and <a href="#" class="terms-link">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-loader" style="display: none;">⏳</span>
+                    </button>
+                </form>
+                <div class="form-footer">
+                    <p>Already have an account? <a href="#" onclick="openLoginModal(); closeSignupModal(); return false;">Login here</a></p>
+                    <a href="#" class="back-link" onclick="showRoleChooser(); return false;">← Back to role selection</a>
+                </div>
+            </div>
+
+            <!-- Fixer Form -->
+            <div class="form-box" id="fixerForm">
+                <div class="form-header">
+                    <h2>Join as a Fixer</h2>
+                    <p>Create your account to provide repair services</p>
+                </div>
+                <form id="fixerSignupForm" class="signup-form" onsubmit="handleFixerSignup(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerName">Full Name *</label>
+                            <input type="text" id="fixerName" name="name" placeholder="Enter your full name" required>
+                            <span class="error-message" id="fixerNameError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerUsername">Username *</label>
+                            <input type="text" id="fixerUsername" name="username" placeholder="Choose a username" required>
+                            <span class="error-message" id="fixerUsernameError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerEmail">Email Address *</label>
+                            <input type="email" id="fixerEmail" name="email" placeholder="Enter your email address" required>
+                            <span class="error-message" id="fixerEmailError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerPhone">Phone Number *</label>
+                            <input type="tel" id="fixerPhone" name="phone" placeholder="Enter your phone number" required>
+                            <span class="error-message" id="fixerPhoneError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerServiceSelect">Service Category *</label>
+                            <select id="fixerServiceSelect" name="service" required>
+                                <option value="" disabled selected>Choose your service category</option>
+                                <option value="Plumbing">🔧 Plumbing</option>
+                                <option value="Carpentry">🏠 Carpentry</option>
+                                <option value="Painting">🎨 Painting</option>
+                                <option value="General Repair">🔨 General Repair</option>
+                            </select>
+                            <span class="error-message" id="fixerServiceError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerPassword">Password *</label>
+                            <div class="password-input-group">
+                                <input type="password" id="fixerPassword" name="password" placeholder="Create a strong password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('fixerPassword')">
+                                    <span class="eye-icon">👁️</span>
+                                </button>
+                            </div>
+                            <span class="error-message" id="fixerPasswordError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerConfirmPassword">Confirm Password *</label>
+                            <div class="password-input-group">
+                                <input type="password" id="fixerConfirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('fixerConfirmPassword')">
+                                    <span class="eye-icon">👁️</span>
+                                </button>
+                            </div>
+                            <span class="error-message" id="fixerConfirmPasswordError"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Address Fields -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerStreet">Street Address *</label>
+                            <input type="text" id="fixerStreet" name="address[street]" placeholder="Enter your street address" required>
+                            <span class="error-message" id="fixerStreetError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerCity">City *</label>
+                            <input type="text" id="fixerCity" name="address[city]" placeholder="Enter your city" required>
+                            <span class="error-message" id="fixerCityError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerState">State *</label>
+                            <input type="text" id="fixerState" name="address[state]" placeholder="Enter your state" required>
+                            <span class="error-message" id="fixerStateError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fixerZipCode">Zip Code *</label>
+                            <input type="text" id="fixerZipCode" name="address[zipCode]" placeholder="Enter your zip code" required>
+                            <span class="error-message" id="fixerZipCodeError"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="fixerTerms" required>
+                                <span class="checkmark"></span>
+                                I agree to the <a href="#" class="terms-link">Terms & Conditions</a> and <a href="#" class="terms-link">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-loader" style="display: none;">⏳</span>
+                    </button>
+                </form>
+                <div class="form-footer">
+                    <p>Already have an account? <a href="#" onclick="openLoginModal(); closeSignupModal(); return false;">Login here</a></p>
+                    <a href="#" class="back-link" onclick="showRoleChooser(); return false;">← Back to role selection</a>
+                </div>
+            </div>
+            
+            <button class="close-btn" onclick="closeSignupModal()">×</button>
+        </div>
+    </div>
+  
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content login-form-container">
+            <div class="form-header">
+                <button class="close-btn" onclick="closeLoginModal()">×</button>
+                <h2>Welcome Back!</h2>
+                <p>Login to your FIXGHAR account</p>
+            </div>
+
+            <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+                <!-- Role Selection -->
+                <div class="form-group role-selection">
+                    <label>Login as *</label>
+                    <div class="role-options">
+                        <div class="role-option">
+                            <input type="radio" id="loginUserRole" name="userRole" value="user" checked>
+                            <label for="loginUserRole" class="role-label">
+                                <div class="role-icon">👤</div>
+                                <div class="role-info">
+                                    <span class="role-title">User</span>
+                                    <span class="role-desc">Book services</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="role-option">
+                            <input type="radio" id="loginFixerRole" name="userRole" value="fixer">
+                            <label for="loginFixerRole" class="role-label">
+                                <div class="role-icon">🔧</div>
+                                <div class="role-info">
+                                    <span class="role-title">Fixer</span>
+                                    <span class="role-desc">Provide services</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginEmail">Email Address *</label>
+                    <input type="email" id="loginEmail" name="email" placeholder="Enter your email address" required>
+                    <span class="error-message" id="loginEmailError"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password *</label>
+                    <div class="password-input-group">
+                        <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
+                            <span class="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                    <span class="error-message" id="loginPasswordError"></span>
+                </div>
+                
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe" name="rememberMe">
+                        <span class="checkmark"></span>
+                        Remember me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                
+                <button type="submit" class="login-submit-btn">
+                    <span class="btn-text">login</span>
+                    <span class="btn-loader" style="display: none;">⏳</span>
+                </button>
+                
+                <div class="login-footer">
+                    <p>Don't have an account? <a href="#" onclick="openModal(); closeLoginModal(); return false;">Sign Up</a></p>
+                </div>
+            </form>  
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal for User -->
+    <div class="modal" id="userOtpModal">
+        <div class="modal-content otp-form-container">
+            <div class="otp-header">
+                <h2>📱 Phone Verification</h2>
+                <p>We've sent a verification code to your phone</p>
+                <p class="user-phone-display" id="userPhoneDisplay"></p>
+
+            </div>
+            
+            <form class="otp-form" id="userOtpForm" onsubmit="handleUserOtpVerification(event)">
+                <div class="otp-input-group">
+                    <input type="text" id="userOtpInput1" class="otp-input" maxlength="1" required>
+                    <input type="text" id="userOtpInput2" class="otp-input" maxlength="1" required>
+                    <input type="text" id="userOtpInput3" class="otp-input" maxlength="1" required>
+                    <input type="text" id="userOtpInput4" class="otp-input" maxlength="1" required>
+                    <input type="text" id="userOtpInput5" class="otp-input" maxlength="1" required>
+                    <input type="text" id="userOtpInput6" class="otp-input" maxlength="1" required>
+                </div>
+                
+                <div class="otp-timer">
+                    <span id="userOtpTimer">Resend code in <span id="userOtpCountdown">60</span>s</span>
+                </div>
+                
+                <button type="submit" class="otp-submit-btn">Verify Phone</button>
+                
+                <div class="otp-footer">
+                    <p>Didn't receive the code? <a href="#" onclick="resendOtp('user'); return false;">Resend</a></p>
+                    <p><a href="#" onclick="closeUserOtpModal(); openModal(); return false;">Back to Sign Up</a></p>
+                </div>
+            </form>
+            
+            <button class="close-btn" onclick="closeUserOtpModal()">×</button>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal for Fixer -->
+    <div class="modal" id="fixerOtpModal">
+        <div class="modal-content otp-form-container">
+            <div class="otp-header">
+                <h2>📱 Phone Verification</h2>
+                <p>We've sent a verification code to your phone</p>
+                <p class="fixer-phone-display" id="fixerPhoneDisplay"></p>
+
+            </div>
+            
+            <form class="otp-form" id="fixerOtpForm" onsubmit="handleFixerOtpVerification(event)">
+                <div class="otp-input-group">
+                    <input type="text" id="fixerOtpInput1" class="otp-input" maxlength="1" required>
+                    <input type="text" id="fixerOtpInput2" class="otp-input" maxlength="1" required>
+                    <input type="text" id="fixerOtpInput3" class="otp-input" maxlength="1" required>
+                    <input type="text" id="fixerOtpInput4" class="otp-input" maxlength="1" required>
+                    <input type="text" id="fixerOtpInput5" class="otp-input" maxlength="1" required>
+                    <input type="text" id="fixerOtpInput6" class="otp-input" maxlength="1" required>
+                </div>
+                
+                <div class="otp-timer">
+                    <span id="fixerOtpTimer">Resend code in <span id="fixerOtpCountdown">60</span>s</span>
+                </div>
+                
+                <button type="submit" class="otp-submit-btn">Verify Phone</button>
+                
+                <div class="otp-footer">
+                    <p>Didn't receive the code? <a href="#" onclick="resendOtp('fixer'); return false;">Resend</a></p>
+                    <p><a href="#" onclick="closeFixerOtpModal(); openModal(); return false;">Back to Sign Up</a></p>
+                </div>
+            </form>
+            
+            <button class="close-btn" onclick="closeFixerOtpModal()">×</button>
+        </div>
+    </div>
+
+    <script src="cookies.js?v=20250111-2"></script>
+    
+    <!-- Core Configuration (shared with dashboards) -->
+    <script src="../config.js?v=20250111-2"></script>
+    
+    <!-- Core Services -->
+    <script src="js/api-service.js?v=20250111-2"></script>
+    <script src="js/validation-service.js?v=20250111-2"></script>
+    
+    <script src="js/state-service.js?v=20250111-2"></script>
+    <script src="js/connection-test.js?v=20250111-2"></script>
+    
+    
+    <!-- Main Application Script -->
+    <script src="scripts/script.js?v=20250111-3"></script>
+    
+    <!-- Navigation Fix Script -->
+    <script>
+        // Modern Alert System
+        function showModernAlert(title, message, type = 'error') {
+            // Remove any existing alerts
+            const existingAlert = document.querySelector('.modern-alert-overlay');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'modern-alert-overlay';
+
+            // Create alert container
+            const alert = document.createElement('div');
+            alert.className = 'modern-alert';
+
+            // Create header with different colors based on type
+            const header = document.createElement('div');
+            header.className = 'modern-alert-header';
+            
+            // Set header color based on type
+            if (type === 'success') {
+                header.style.background = 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)';
+            } else if (type === 'info') {
+                header.style.background = 'linear-gradient(135deg, #2196F3 0%, #42A5F5 100%)';
+            } else {
+                header.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)';
+            }
+            
+            const titleElement = document.createElement('h3');
+            titleElement.className = 'modern-alert-title';
+            titleElement.textContent = title;
+            header.appendChild(titleElement);
+
+            // Create body
+            const body = document.createElement('div');
+            body.className = 'modern-alert-body';
+            
+            const messageElement = document.createElement('p');
+            messageElement.className = 'modern-alert-message';
+            messageElement.textContent = message;
+            body.appendChild(messageElement);
+
+            // Create buttons
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'modern-alert-buttons';
+            
+            const okButton = document.createElement('button');
+            okButton.className = 'modern-alert-button primary';
+            okButton.textContent = 'OK';
+            okButton.onclick = () => {
+                overlay.remove();
+            };
+            buttonsContainer.appendChild(okButton);
+
+            body.appendChild(buttonsContainer);
+
+            // Assemble alert
+            alert.appendChild(header);
+            alert.appendChild(body);
+            overlay.appendChild(alert);
+
+            // Add to page
+            document.body.appendChild(overlay);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
+            }, 5000);
+        }
+
+        // Override default alert
+        const originalAlert = window.alert;
+        window.alert = function(message) {
+            showModernAlert('Notification', message, 'info');
+        };
+
+        // Modern Confirm Dialog System
+        function showModernConfirmDialog(title, message, type = 'warning', onConfirm) {
+            // Remove any existing alerts
+            const existingAlert = document.querySelector('.modern-alert-overlay');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'modern-alert-overlay';
+
+            // Create alert container
+            const alert = document.createElement('div');
+            alert.className = 'modern-alert';
+
+            // Create header with different colors based on type
+            const header = document.createElement('div');
+            header.className = 'modern-alert-header';
+            
+            // Set header color based on type
+            if (type === 'success') {
+                header.style.background = 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)';
+            } else if (type === 'info') {
+                header.style.background = 'linear-gradient(135deg, #2196F3 0%, #42A5F5 100%)';
+            } else if (type === 'warning') {
+                header.style.background = 'linear-gradient(135deg, #FF9800 0%, #FFB74D 100%)';
+            } else {
+                header.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)';
+            }
+            
+            const titleElement = document.createElement('h3');
+            titleElement.className = 'modern-alert-title';
+            titleElement.textContent = title;
+            header.appendChild(titleElement);
+
+            // Create body
+            const body = document.createElement('div');
+            body.className = 'modern-alert-body';
+            
+            const messageElement = document.createElement('p');
+            messageElement.className = 'modern-alert-message';
+            messageElement.textContent = message;
+            body.appendChild(messageElement);
+
+            // Create buttons
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'modern-alert-buttons';
+            
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'modern-alert-button secondary';
+            cancelButton.textContent = 'Cancel';
+            cancelButton.onclick = () => {
+                overlay.remove();
+            };
+            
+            const confirmButton = document.createElement('button');
+            confirmButton.className = 'modern-alert-button primary';
+            confirmButton.textContent = 'Confirm';
+            confirmButton.onclick = () => {
+                overlay.remove();
+                if (onConfirm) {
+                    onConfirm();
+                }
+            };
+            
+            buttonsContainer.appendChild(cancelButton);
+            buttonsContainer.appendChild(confirmButton);
+            body.appendChild(buttonsContainer);
+
+            // Assemble alert
+            alert.appendChild(header);
+            alert.appendChild(body);
+            overlay.appendChild(alert);
+
+            // Add to page
+            document.body.appendChild(overlay);
+        }
+
+        // Ensure showSection function is available
+        function showSection(sectionId) {
+            console.log('Switching to section:', sectionId);
+            
+            if (sectionId === 'home') {
+                // Show ALL sections when home is clicked
+                const sections = ['home', 'services', 'about', 'contact'];
+                sections.forEach(id => {
+                    const section = document.getElementById(id);
+                    if (section) {
+                        section.style.display = 'block';
+                    }
+                });
+                console.log('✅ Showing ALL sections (Home clicked)');
+            } else {
+                // Hide all sections first
+                const sections = ['home', 'services', 'about', 'contact'];
+                sections.forEach(id => {
+                    const section = document.getElementById(id);
+                    if (section) {
+                        section.style.display = 'none';
+                    }
+                });
+                
+                // Show selected section
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                    console.log('✅ Showing section:', sectionId);
+                } else {
+                    console.error('❌ Section not found:', sectionId);
+                }
+            }
+            
+            // Update navigation active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to clicked link
+            const activeLink = document.querySelector(`a[onclick*="${sectionId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Scroll to top function
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Go to home function (combines showSection and scrollToTop)
+        function goToHome() {
+            console.log('🏠 Going to Home section...');
+            showSection('home');
+            scrollToTop();
+        }
+        
+        // Make sure functions are available globally
+        window.showSection = showSection;
+        window.scrollToTop = scrollToTop;
+        window.goToHome = goToHome;
+        
+        // Initialize navigation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Navigation initialized');
+            
+            // Show ALL sections by default (like clicking Home)
+            document.getElementById('home').style.display = 'block';
+            document.getElementById('services').style.display = 'block';
+            document.getElementById('about').style.display = 'block';
+            document.getElementById('contact').style.display = 'block';
+            
+            console.log('✅ Navigation ready - ALL sections visible (Home mode)');
+        });
+    </script>
+    
+    
+    
+    
+    
+    <!-- Simple Working Modal Scripts -->
+    <script>
+        // Simple Modal Functions - WORKING VERSION
+        function openModal() {
+            console.log('openModal called');
+            const modal = document.getElementById('signupModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Signup modal opened successfully');
+            } else {
+                console.error('❌ signupModal element not found');
+                alert('Signup modal not found!');
+            }
+        }
+        
+        function openLoginModal() {
+            console.log('openLoginModal called');
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Login modal opened successfully');
+            } else {
+                console.error('❌ loginModal element not found');
+                alert('Login modal not found!');
+            }
+        }
+        
+        function closeSignupModal() {
+            const modal = document.getElementById('signupModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('✅ Signup modal closed');
+            }
+        }
+        
+        function closeLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('✅ Login modal closed');
+            }
+        }
+        
+        // Generic close modal function
+        function closeModal() {
+            closeSignupModal();
+            closeLoginModal();
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const signupModal = document.getElementById('signupModal');
+            const loginModal = document.getElementById('loginModal');
+            
+            if (event.target === signupModal) {
+                closeSignupModal();
+            }
+            if (event.target === loginModal) {
+                closeLoginModal();
+            }
+        }
+        
+        function closeUserOtpModal() {
+            const modal = document.getElementById('userOtpModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        function closeFixerOtpModal() {
+            const modal = document.getElementById('fixerOtpModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Role Selection Function
+        function signup(role) {
+            console.log('signup called with role:', role);
+            const roleChooser = document.getElementById('roleChooser');
+            const userForm = document.getElementById('userForm');
+            const fixerForm = document.getElementById('fixerForm');
+            
+            if (roleChooser && userForm && fixerForm) {
+                if (role === 'User') {
+                    roleChooser.style.display = 'none';
+                    userForm.style.display = 'block';
+                    console.log('✅ User form displayed');
+                } else if (role === 'Fixer') {
+                    roleChooser.style.display = 'none';
+                    fixerForm.style.display = 'block';
+                    console.log('✅ Fixer form displayed');
+                }
+            } else {
+                console.error('❌ Role chooser elements not found');
+            }
+        }
+        
+        // Show Role Chooser
+        function showRoleChooser() {
+            const roleChooser = document.getElementById('roleChooser');
+            const userForm = document.getElementById('userForm');
+            const fixerForm = document.getElementById('fixerForm');
+            
+            if (roleChooser && userForm && fixerForm) {
+                roleChooser.style.display = 'block';
+                userForm.style.display = 'none';
+                fixerForm.style.display = 'none';
+                console.log('✅ Role chooser displayed');
+            } else {
+                console.error('❌ Role chooser elements not found');
+            }
+        }
+        
+        // Password Toggle Function
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                } else {
+                    input.type = 'password';
+                }
+                console.log('✅ Password visibility toggled');
+            }
+        }
+        
+        // OTP Verification Modal
+        function showOTPVerificationModal(userType, phone) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'otpVerificationModal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📱 Phone Verification</h2>
+                        <span class="close" onclick="closeOTPModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                                <p style="margin: 0; color: #2e7d32; font-weight: bold;">✅ Registration Successful!</p>
+                            </div>
+                            <p>We've sent a verification code to:</p>
+                            <p style="font-weight: bold; color: #1976d2; font-size: 16px;">${phone}</p>
+                            <p style="color: #666; font-size: 14px;">Please check your phone and enter the 6-digit OTP below:</p>
+                        </div>
+                        <form id="otpVerificationForm">
+                            <div class="form-group">
+                                <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" required 
+                                       style="text-align: center; font-size: 18px; letter-spacing: 2px; font-weight: bold;">
+                            </div>
+                            <div class="form-group" style="text-align: center;">
+                                <button type="submit" class="btn btn-primary" style="margin-right: 10px;">✅ Verify Phone</button>
+                                <button type="button" class="btn btn-secondary" onclick="resendOTP('${userType}', '${phone}')">🔄 Resend OTP</button>
+                            </div>
+                        </form>
+                        <div style="text-align: center; margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                            <p style="margin: 0; color: #856404; font-size: 12px;">
+                                💡 <strong>Tip:</strong> Check your SMS messages for the verification code
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+            
+            // Focus on OTP input
+            document.getElementById('otpInput').focus();
+            
+            // Auto-format OTP input (only numbers)
+            document.getElementById('otpInput').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+        }
+        
+        function closeOTPModal() {
+            const modal = document.getElementById('otpVerificationModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // OTP Verification Handler
+        async function handleOTPVerification(event) {
+            event.preventDefault();
+            
+            const otp = document.getElementById('otpInput').value;
+            const phone = document.querySelector('#otpVerificationModal .modal-body p strong').textContent;
+            const userType = document.querySelector('#otpVerificationForm button[onclick*="resendOTP"]').onclick.toString().match(/'([^']+)'/)[1];
+            
+            if (otp.length !== 6) {
+                alert('Please enter a valid 6-digit OTP');
+                return;
+            }
+            
+            try {
+                const apiService = new FIXGHARApiService();
+                const response = await apiService.verifyOTP({
+                    phone: phone,
+                    otp: otp,
+                    userType: userType
+                });
+                
+                if (response.success) {
+                    // Close OTP modal
+                    closeOTPModal();
+                    
+                    // Show success message
+                    alert('Phone verified successfully! You can now login.');
+                    
+                    // Switch to login tab
+                    switchToLoginTab();
+                } else {
+                    alert('OTP verification failed: ' + (response.message || 'Invalid OTP'));
+                }
+            } catch (error) {
+                console.error('OTP verification error:', error);
+                alert('OTP verification error: ' + error.message);
+            }
+        }
+        
+        // Switch to login tab function
+        function switchToLoginTab() {
+            // Close any open modals
+            closeModal();
+            closeOTPModal();
+            
+            // Open login modal
+            openLoginModal();
+            
+            // Pre-fill email in login form if available
+            const email = document.querySelector('#otpVerificationModal .modal-body p strong')?.textContent;
+            if (email) {
+                const loginEmailInput = document.querySelector('#loginForm input[type="email"]');
+                if (loginEmailInput) {
+                    loginEmailInput.value = email;
+                }
+            }
+        }
+        
+        // Resend OTP Handler
+        async function resendOTP(userType, phone) {
+            try {
+                const apiService = new FIXGHARApiService();
+                const response = await apiService.resendOTP({
+                    phone: phone,
+                    userType: userType
+                });
+                
+                if (response.success) {
+                    alert('OTP resent successfully! Please check your phone.');
+                } else {
+                    alert('Failed to resend OTP: ' + (response.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Resend OTP error:', error);
+                alert('Resend OTP error: ' + error.message);
+            }
+        }
+        
+        // Simple Form Handlers
+        async function handleUserSignup(event) {
+            event.preventDefault();
+            
+            try {
+                // Get form data
+                const formData = {
+                    name: document.getElementById('userName').value,
+                    username: document.getElementById('userUsername').value,
+                    email: document.getElementById('userEmail').value,
+                    phone: document.getElementById('userPhone').value,
+                    password: document.getElementById('userPassword').value,
+                    address: {
+                        street: document.getElementById('userStreet').value,
+                        city: document.getElementById('userCity').value,
+                        state: document.getElementById('userState').value,
+                        zipCode: document.getElementById('userZipCode').value
+                    }
+                };
+
+                // Validate passwords match
+                const confirmPassword = document.getElementById('userConfirmPassword').value;
+                if (formData.password !== confirmPassword) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+
+                console.log('🚀 Sending registration data:', formData);
+
+                // Create API service instance
+                const apiService = new FIXGHARApiService();
+                
+                // Send registration request
+                const response = await apiService.registerUser(formData);
+                
+                if (response.success) {
+                    console.log('✅ Registration successful:', response);
+                    
+                    // Show success message
+                    alert('Registration successful! Please check your phone for OTP verification.');
+                    
+                    // Show OTP verification modal
+                    showOTPVerificationModal('user', formData.phone);
+                    
+                    // Clear form
+                    document.getElementById('userSignupForm').reset();
+                    
+                    // Close signup modal
+                    closeSignupModal();
+                } else {
+                    console.error('❌ Registration failed:', response);
+                    alert('Registration failed: ' + (response.message || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('❌ Registration error:', error);
+                alert('Registration error: ' + error.message);
+            }
+        }
+        
+        async function handleFixerSignup(event) {
+            event.preventDefault();
+            
+            try {
+                // Get form data
+                const formData = {
+                    name: document.getElementById('fixerName').value,
+                    username: document.getElementById('fixerUsername').value,
+                    email: document.getElementById('fixerEmail').value,
+                    phone: document.getElementById('fixerPhone').value,
+                    password: document.getElementById('fixerPassword').value,
+                    serviceCategory: document.getElementById('fixerServiceSelect').value,
+                    address: {
+                        street: document.getElementById('fixerStreet').value,
+                        city: document.getElementById('fixerCity').value,
+                        state: document.getElementById('fixerState').value,
+                        zipCode: document.getElementById('fixerZipCode').value
+                    }
+                };
+
+                // Validate passwords match
+                const confirmPassword = document.getElementById('fixerConfirmPassword').value;
+                if (formData.password !== confirmPassword) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+
+                console.log('🚀 Sending fixer registration data:', formData);
+
+                // Create API service instance
+                const apiService = new FIXGHARApiService();
+                
+                // Send registration request
+                const response = await apiService.registerFixer(formData);
+                
+                if (response.success) {
+                    console.log('✅ Fixer registration successful:', response);
+                    
+                    // Show success message
+                    alert('Fixer registration successful! Please check your phone for OTP verification.');
+                    
+                    // Show OTP verification modal
+                    showOTPVerificationModal('fixer', formData.phone);
+                    
+                    // Clear form
+                    document.getElementById('fixerSignupForm').reset();
+                    
+                    // Close signup modal
+                    closeSignupModal();
+                } else {
+                    console.error('❌ Fixer registration failed:', response);
+                    alert('Fixer registration failed: ' + (response.message || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('❌ Fixer registration error:', error);
+                alert('Fixer registration error: ' + error.message);
+            }
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            try {
+                // Get form data
+                const selectedRole = document.querySelector('input[name="userRole"]:checked').value;
+                const formData = {
+                    email: document.getElementById('loginEmail').value,
+                    password: document.getElementById('loginPassword').value
+                };
+
+                console.log('🚀 Sending login data:', formData);
+
+                // Create API service instance
+                console.log('🔧 Creating API service...');
+                console.log('🔧 FIXGHARApiService available:', typeof FIXGHARApiService);
+                console.log('🔧 window.FIXGHAR_CONFIG:', window.FIXGHAR_CONFIG);
+                
+                const apiService = new FIXGHARApiService();
+                
+                console.log('🔧 API Service created:', apiService);
+                console.log('📡 API Base URL:', apiService.baseURL);
+                console.log('📡 API Service methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(apiService)));
+                
+                // Send login request based on role
+                let response;
+                console.log('🚀 Attempting login with role:', selectedRole);
+                console.log('📝 Login data:', formData);
+                
+                try {
+                    if (selectedRole === 'fixer') {
+                        console.log('🔧 Calling loginFixer...');
+                        response = await apiService.loginFixer(formData);
+                    } else {
+                        console.log('🔧 Calling loginUser...');
+                        response = await apiService.loginUser(formData);
+                    }
+                    console.log('📨 Login response received:', response);
+                } catch (apiError) {
+                    console.error('❌ API call failed:', apiError);
+                    throw apiError;
+                }
+                
+                if (response.success) {
+                    console.log('✅ Login successful:', response);
+                    
+                    // Store user data
+                    if (response.data && response.data.token) {
+                        localStorage.setItem('fixghar_token', response.data.token);
+                        console.log('🔑 Token stored in localStorage:', response.data.token.substring(0, 20) + '...');
+                    }
+                    
+                    // Store user/fixer data based on role
+                    if (selectedRole === 'fixer' && response.data && response.data.fixer) {
+                        localStorage.setItem('fixghar_user', JSON.stringify(response.data.fixer));
+                        localStorage.setItem('userName', response.data.fixer.name || 'Fixer');
+                        localStorage.setItem('userType', 'fixer');
+                        console.log('🔧 Fixer data stored:', response.data.fixer);
+                    } else if (selectedRole === 'user' && response.data && response.data.user) {
+                        localStorage.setItem('fixghar_user', JSON.stringify(response.data.user));
+                        localStorage.setItem('userName', response.data.user.name || 'User');
+                        localStorage.setItem('userType', 'user');
+                        console.log('👤 User data stored:', response.data.user);
+                    }
+                    
+                    // Show success message
+                    const roleText = selectedRole === 'fixer' ? 'Fixer' : 'User';
+                    showModernAlert('Login Successful!', `Welcome back, ${roleText}! Redirecting to ${roleText} dashboard...`, 'success');
+                    
+                    // Clear form
+                    document.getElementById('loginForm').reset();
+                    
+                    // Close modal
+                    closeLoginModal();
+                    
+                    // Redirect to appropriate dashboard
+                    setTimeout(() => {
+                        if (selectedRole === 'fixer') {
+                            console.log('🔧 Redirecting to fixer dashboard');
+                            window.location.href = 'pages/fixer-dashboard.html';
+                        } else {
+                            console.log('👤 Redirecting to user dashboard');
+                            window.location.href = 'pages/user-dashboard.html';
+                        }
+                    }, 1000);
+                    
+                } else {
+                    console.error('❌ Login failed:', response);
+                    showModernAlert('Login Failed', response.message || 'Invalid credentials. Please check your email and password.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                console.error('❌ Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                // Show user-friendly error message
+                let errorMessage = 'Login failed. ';
+                if (error.message.includes('timeout')) {
+                    errorMessage += 'Request timed out. Please check your internet connection and try again.';
+                } else if (error.message.includes('Network error')) {
+                    errorMessage += 'Cannot connect to server. Please ensure backend is running.';
+                } else if (error.message.includes('Invalid credentials')) {
+                    errorMessage += 'Invalid email or password. Please check your credentials.';
+                } else {
+                    errorMessage += error.message;
+                }
+                showModernAlert('Login Error', errorMessage, 'error');
+            }
+        }
+        
+        function handleUserOtpVerification(event) {
+            event.preventDefault();
+            showModernAlert('OTP Verification', 'User OTP verification submitted!', 'success');
+        }
+        
+        function handleFixerOtpVerification(event) {
+            event.preventDefault();
+            showModernAlert('OTP Verification', 'Fixer OTP verification submitted!', 'success');
+        }
+        
+        function resendOtp(type) {
+            showModernAlert('OTP Resent', type + ' OTP resent successfully!', 'info');
+        }
+        
+
+       
+            // Add event listener for booking form
+            document.addEventListener('submit', function(event) {
+                if (event.target.id === 'bookingForm') {
+                    event.preventDefault();
+                    submitBookingForm();
+                }
+            });
+        
+    </script>
+    
+    <!-- Chatbot Scripts -->
+    <script src="js/chatbot.js"></script>
+    <script>
+        (function () {
+            const navbar = document.querySelector('.navbar');
+            const toggle = document.querySelector('.nav-toggle');
+            const navLinks = document.querySelectorAll('.nav-menu a, .nav-menu button');
+            if (!navbar || !toggle) return;
+
+            const closeMenu = () => {
+                navbar.classList.remove('nav-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            };
+
+            toggle.addEventListener('click', () => {
+                const isOpen = navbar.classList.toggle('nav-open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            navLinks.forEach((el) => {
+                el.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) closeMenu();
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth > 768) return;
+                if (!navbar.contains(e.target)) closeMenu();
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) closeMenu();
+            });
+        })();
+    </script>
+</body>
+</html>

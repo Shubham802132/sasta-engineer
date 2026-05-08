@@ -1,0 +1,45 @@
+{
+  "name": "fixghar-app",
+  "version": "1.0.0",
+  "description": "FIXGHAR - Home Service Platform",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "FIXGHAR-SMART-LAUNCHER.bat",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm start",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "setup": "FIXGHAR-COMPLETE-SETUP.bat",
+    "smart-start": "FIXGHAR-SMART-LAUNCHER.bat",
+    "independent-start": "FIXGHAR-INDEPENDENT-LAUNCHER.bat",
+    "vscode-start": "VSCODE-START-FIXGHAR.bat",
+    "vscode-independent": "VSCODE-INDEPENDENT-START.bat",
+    "auto-restart-backend": "AUTO-RESTART-BACKEND.bat",
+    "auto-restart-all": "AUTO-RESTART-ALL.bat",
+    "persistent-backend": "PERSISTENT-BACKEND.bat",
+    "persistent-all": "PERSISTENT-ALL-SERVERS.bat",
+    "advanced-start": "FIXGHAR-ADVANCED-LAUNCHER.bat",
+    "port-manager": "FIXGHAR-PORT-MANAGER.bat",
+    "auto-start": "FIXGHAR-AUTO-LAUNCHER.bat",
+    "desktop-shortcut": "FIXGHAR-DESKTOP-SHORTCUT.bat",
+    "startup-registry": "FIXGHAR-STARTUP-REGISTRY.bat",
+    "remove-startup": "FIXGHAR-REMOVE-STARTUP.bat",
+    "quick-start": "QUICK-START.bat",
+    "stop": "STOP-FIXGHAR.bat",
+    "status": "CHECK-STATUS.bat",
+    "fix-ports": "FIXGHAR-PORT-MANAGER.bat"
+  },
+  "keywords": [
+    "fixghar",
+    "home-service",
+    "repair",
+    "maintenance"
+  ],
+  "author": "FIXGHAR Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {}
+}
