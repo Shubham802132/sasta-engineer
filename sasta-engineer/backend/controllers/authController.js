@@ -5,6 +5,25 @@ const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const smsService = require('../utils/smsService');
 
+function normalizeEmail(email) {
+    if (typeof email !== 'string') return '';
+    return email.trim().toLowerCase();
+}
+
+function normalizeUsername(username) {
+    if (typeof username !== 'string') return '';
+    return username.trim();
+}
+
+function normalizePhone(phone) {
+    if (typeof phone !== 'string') return '';
+    // keep digits only; store/compare in a consistent way
+    const digits = phone.replace(/\D/g, '');
+    // If country code included, keep full digits; else keep digits as-is.
+    // (We avoid forcing to 10 digits because existing DB may store with country code.)
+    return digits;
+}
+
 function getRefreshCookieMaxAgeMs() {
     const raw = process.env.JWT_REFRESH_EXPIRE;
     const days = Number.parseInt(raw, 10);
@@ -51,31 +70,55 @@ const registerUser = async (req, res) => {
         }
 
         const { name, username, email, phone, password, address } = req.body;
+        const normalized = {
+            email: normalizeEmail(email),
+            username: normalizeUsername(username),
+            phone: normalizePhone(phone)
+        };
+
         console.log('📝 User registration attempt', {
-            email,
-            username,
-            phone,
+            email: normalized.email,
+            username: normalized.username,
+            phone: normalized.phone,
             hasAddress: !!address
         });
 
         // Check if user already exists
-        const existingUser = await User.findOne({
-            $or: [{ email }, { username }, { phone }]
-        });
+        const orConditions = [];
+        if (normalized.email) orConditions.push({ email: normalized.email });
+        if (normalized.username) orConditions.push({ username: normalized.username });
+        if (normalized.phone) orConditions.push({ phone: normalized.phone });
+
+        if (orConditions.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing registration identifiers (email/username/phone)'
+            });
+        }
+
+        const existingUser = await User.findOne({ $or: orConditions }).select('email username phone');
 
         if (existingUser) {
+            const conflicts = [];
+            if (normalized.email && existingUser.email === normalized.email) conflicts.push('email');
+            if (normalized.username && existingUser.username === normalized.username) conflicts.push('username');
+            if (normalized.phone && normalizePhone(existingUser.phone) === normalized.phone) conflicts.push('phone');
+
             return res.status(409).json({
                 success: false,
-                message: 'User with this email, username, or phone already exists'
+                message: conflicts.length
+                    ? `User with this ${conflicts.join(', ')} already exists`
+                    : 'User with this email, username, or phone already exists',
+                conflicts: conflicts
             });
         }
 
         // Create user
         const user = await User.create({
             name,
-            username,
-            email,
-            phone,
+            username: normalized.username || username,
+            email: normalized.email || email,
+            phone: normalized.phone || phone,
             password,
             address
         });
