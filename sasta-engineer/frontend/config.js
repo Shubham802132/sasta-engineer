@@ -5,7 +5,9 @@
 const FRONTEND_CONFIG = {
     // Backend API Configuration
     api: {
-        baseURL: baseURL: 'https://fixghar.onrender.com/api',
+        baseURL: (typeof window !== 'undefined' && window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+            ? 'http://localhost:5000/api'
+            : 'https://fixghar.onrender.com/api',
         timeout: 60000, // 60 seconds
         endpoints: {
             // Authentication
@@ -124,36 +126,9 @@ const FRONTEND_CONFIG = {
 };
 
 // Make config available globally for frontend use
-window.FIXGHAR_CONFIG = FRONTEND_CONFIG;
-
-// Environment-specific overrides
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    FRONTEND_CONFIG.api.baseURL = 'https://fixghar.onrender.com/api';
-    FRONTEND_CONFIG.frontend.baseURL = 'http://localhost:3030';
+if (typeof window !== 'undefined') {
+    window.FIXGHAR_CONFIG = FRONTEND_CONFIG;
 }
-
-// Force correct API URL regardless of current port
-FRONTEND_CONFIG.api.baseURL = 'https://fixghar.onrender.com/api';
-
-// Auto-detect current port and update frontend URL
-if (typeof window !== 'undefined' && window.location) {
-    const currentPort = window.location.port;
-    if (currentPort) {
-        FRONTEND_CONFIG.frontend.baseURL = `http://localhost:${currentPort}`;
-        console.log(`🔧 Auto-detected frontend port: ${currentPort}`);
-    }
-}
-
-// Debug: Log current configuration
-console.log('🔧 Current Configuration:');
-console.log('  - API Base URL:', FRONTEND_CONFIG.api.baseURL);
-console.log('  - Frontend URL:', FRONTEND_CONFIG.frontend.baseURL);
-console.log('  - Current Location:', window.location.href);
-
-// Ensure this config takes precedence
-console.log('🚀 FIXGHAR Frontend Config Loaded!');
-console.log('📡 API Base URL:', FRONTEND_CONFIG.api.baseURL);
-console.log('🌐 Current Location:', window.location.href);
 
 // Export for different environments
 if (typeof module !== 'undefined' && module.exports) {
@@ -168,7 +143,3 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof exports !== 'undefined') {
     exports.default = FRONTEND_CONFIG;
 }
-
-console.log('✅ FIXGHAR Frontend Configuration loaded successfully!');
-console.log('🌐 API Base URL:', FRONTEND_CONFIG.api.baseURL);
-console.log('🏠 Frontend URL:', FRONTEND_CONFIG.frontend.baseURL);

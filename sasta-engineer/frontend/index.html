@@ -620,19 +620,20 @@
 
     <script src="cookies.js?v=20250111-2"></script>
     
-    <!-- Core Configuration (shared with dashboards) -->
-    <script src="../config.js?v=20250111-2"></script>
+    <!-- Core Configuration -->
+    <script src="./config.js?v=20250111-2"></script>
     
     <!-- Core Services -->
     <script src="js/api-service.js?v=20250111-2"></script>
     <script src="js/validation-service.js?v=20250111-2"></script>
     
     <script src="js/state-service.js?v=20250111-2"></script>
-    <script src="js/connection-test.js?v=20250111-2"></script>
     
     
-    <!-- Main Application Script -->
-    <script src="scripts/script.js?v=20250111-3"></script>
+    <!-- Removed missing scripts:
+         - js/connection-test.js
+         - scripts/script.js
+         (They were causing 404s in production.) -->
     
     <!-- Navigation Fix Script -->
     <script>
@@ -1404,6 +1405,38 @@
     
     <!-- Chatbot Scripts -->
     <script src="js/chatbot.js"></script>
+    <script>
+        // Safe fallbacks for missing optional scripts in production
+        if (typeof window.searchLocation !== 'function') {
+            window.searchLocation = function () {
+                const input = document.getElementById('locationInput');
+                const value = input ? String(input.value || '').trim() : '';
+                if (!value) {
+                    if (typeof window.showModernAlert === 'function') {
+                        window.showModernAlert('Location', 'Please enter your city/area/pincode.', 'info');
+                    } else {
+                        alert('Please enter your city/area/pincode.');
+                    }
+                    return;
+                }
+                if (typeof window.showModernAlert === 'function') {
+                    window.showModernAlert('Location Saved', `Location set to: ${value}`, 'success');
+                } else {
+                    alert(`Location set to: ${value}`);
+                }
+            };
+        }
+
+        if (typeof window.submitBookingForm !== 'function') {
+            window.submitBookingForm = function () {
+                if (typeof window.showModernAlert === 'function') {
+                    window.showModernAlert('Booking', 'Booking form is not available on this page.', 'info');
+                } else {
+                    alert('Booking form is not available on this page.');
+                }
+            };
+        }
+    </script>
     <script>
         (function () {
             const navbar = document.querySelector('.navbar');

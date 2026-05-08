@@ -180,10 +180,17 @@
 
     <script src="../config.js"></script>
     <script src="../js/api-service.js"></script>
-    <script src="../scripts/fixer-dashboard-script.js"></script>
+    <!-- Removed missing script:
+         - ../scripts/fixer-dashboard-script.js
+         (It was causing 404s in production.) -->
     
     <!-- Test Script -->
     <script>
+        const API_BASE = window.FIXGHAR_CONFIG?.api?.baseURL
+            || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:5000/api'
+                : 'https://fixghar.onrender.com/api');
+
         console.log('🔍 Testing JavaScript...');
         
         // Test if functions are available
@@ -419,7 +426,7 @@
                     const token = localStorage.getItem('fixghar_token');
                     if (token) {
                         try {
-                            const response = await fetch('https://fixghar.onrender.com/api/fixers/bookings', {
+                            const response = await fetch(`${API_BASE}/fixers/bookings`, {
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
                                     'Content-Type': 'application/json'
@@ -683,7 +690,7 @@
                     console.log('🔑 Making API request without token (public endpoint)');
                 }
                 
-                const response = await fetch('https://fixghar.onrender.com/api/fixers/service-requests', {
+                const response = await fetch(`${API_BASE}/fixers/service-requests`, {
                     headers: headers
                 });
 
@@ -1105,7 +1112,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                const response = await fetch(`${API_BASE}/fixers/bookings/${requestId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1141,7 +1148,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                const response = await fetch(`${API_BASE}/fixers/bookings/${requestId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1185,7 +1192,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://fixghar.onrender.com/api/fixers/jobs/${jobId}/progress`, {
+                const response = await fetch(`${API_BASE}/fixers/jobs/${jobId}/progress`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1298,7 +1305,7 @@
             try {
                 console.log('🔧 Registering as fixer...', fixerData);
                 
-                const response = await fetch('https://fixghar.onrender.com/api/auth/register/fixer', {
+                const response = await fetch(`${API_BASE}/auth/register/fixer`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1337,7 +1344,7 @@
             try {
                 console.log('🔧 Creating test fixer profile...');
                 
-                const response = await fetch('https://fixghar.onrender.com/api/create-test-fixer', {
+                const response = await fetch(`${API_BASE}/create-test-fixer`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1442,7 +1449,7 @@
 
                 console.log('💾 Saving profile data:', profileData);
 
-                const response = await fetch('https://fixghar.onrender.com/api/fixers/profile', {
+                const response = await fetch(`${API_BASE}/fixers/profile`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1582,7 +1589,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                const response = await fetch(`${API_BASE}/fixers/bookings/${requestId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1618,7 +1625,7 @@
                     return;
                 }
 
-                const response = await fetch(`https://fixghar.onrender.com/api/fixers/bookings/${requestId}/status`, {
+                const response = await fetch(`${API_BASE}/fixers/bookings/${requestId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1662,7 +1669,7 @@
                     console.log('🔑 Token (first 20 chars):', token.substring(0, 20) + '...');
                     
                     // Try to load profile data
-                    const response = await fetch('https://fixghar.onrender.com/api/fixers/profile', {
+                    const response = await fetch(`${API_BASE}/fixers/profile`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
@@ -1863,7 +1870,7 @@
                 console.log('📊 Loading service requests data...');
 
                 // Load service requests from API
-                console.log('📡 Making API call to: https://fixghar.onrender.com/api/fixers/service-requests');
+                console.log(`📡 Making API call to: ${API_BASE}/fixers/service-requests`);
                 
                 try {
                     const headers = {
@@ -1875,7 +1882,7 @@
                         headers['Authorization'] = `Bearer ${token}`;
                     }
                     
-                    const requestsResponse = await fetch('https://fixghar.onrender.com/api/fixers/service-requests', {
+                    const requestsResponse = await fetch(`${API_BASE}/fixers/service-requests`, {
                         headers: headers,
                         timeout: 5000 // 5 second timeout
                     });

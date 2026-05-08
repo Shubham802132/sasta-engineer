@@ -271,9 +271,16 @@ class FIXGHARChatbot {
         }
     }
 
+    getApiBase() {
+        return window.FIXGHAR_CONFIG?.api?.baseURL
+            || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:5000/api'
+                : 'https://fixghar.onrender.com/api');
+    }
+
     async checkBackendConnection() {
         try {
-            const apiBase = window.FIXGHAR_CONFIG?.api?.baseURL || 'https://fixghar.onrender.com/api';
+            const apiBase = this.getApiBase();
             const response = await fetch(`${apiBase}/chatbot/health`);
             if (response.ok) {
                 const data = await response.json();
@@ -293,7 +300,7 @@ class FIXGHARChatbot {
             // Check for auth token
             const token = localStorage.getItem('fixghar_token') || 
                          (window.cookieManager && window.cookieManager.getAuthToken());
-            const apiBase = window.FIXGHAR_CONFIG?.api?.baseURL || 'https://fixghar.onrender.com/api';
+            const apiBase = this.getApiBase();
             
             // Check userType from localStorage first
             const userType = localStorage.getItem('userType');
@@ -363,7 +370,7 @@ class FIXGHARChatbot {
                     console.log('👤 Detected User role');
                     
                     // Try to get user profile
-                    const userResponse = await fetch('https://fixghar.onrender.com/api/users/profile', {
+                    const userResponse = await fetch(`${this.getApiBase()}/users/profile`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
@@ -418,7 +425,7 @@ class FIXGHARChatbot {
                          (window.cookieManager && window.cookieManager.getAuthToken());
             
             if (token) {
-                const response = await fetch('https://fixghar.onrender.com/api/users/bookings', {
+                const response = await fetch(`${this.getApiBase()}/users/bookings`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -445,7 +452,7 @@ class FIXGHARChatbot {
             
             if (token) {
                 // Load fixer bookings
-                const bookingsResponse = await fetch('https://fixghar.onrender.com/api/fixers/bookings', {
+                const bookingsResponse = await fetch(`${this.getApiBase()}/fixers/bookings`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -464,7 +471,7 @@ class FIXGHARChatbot {
                 }
 
                 // Load service requests
-                const requestsResponse = await fetch('https://fixghar.onrender.com/api/fixers/service-requests', {
+                const requestsResponse = await fetch(`${this.getApiBase()}/fixers/service-requests`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -881,7 +888,7 @@ class FIXGHARChatbot {
                 ];
             } else {
                 // Fetch quick actions from backend for logged in users
-                const response = await fetch('https://fixghar.onrender.com/api/chatbot/quick-actions');
+                const response = await fetch(`${this.getApiBase()}/chatbot/quick-actions`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success) {
@@ -1091,7 +1098,7 @@ class FIXGHARChatbot {
 
         try {
             // Call backend AI API
-            const response = await fetch('https://fixghar.onrender.com/api/chatbot/chat', {
+            const response = await fetch(`${this.getApiBase()}/chatbot/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1185,7 +1192,7 @@ class FIXGHARChatbot {
 
     async fetchServices() {
         try {
-            const response = await fetch('https://fixghar.onrender.com/api/services');
+            const response = await fetch(`${this.getApiBase()}/services`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
@@ -1206,7 +1213,7 @@ class FIXGHARChatbot {
 
     async fetchFixers() {
         try {
-            const response = await fetch('https://fixghar.onrender.com/api/fixers/service-requests');
+            const response = await fetch(`${this.getApiBase()}/fixers/service-requests`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
@@ -1225,7 +1232,7 @@ class FIXGHARChatbot {
 
     async fetchPricing() {
         try {
-            const response = await fetch('https://fixghar.onrender.com/api/services');
+            const response = await fetch(`${this.getApiBase()}/services`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
@@ -1325,7 +1332,7 @@ class FIXGHARChatbot {
 
         try {
             // Fetch available services
-            const response = await fetch('https://fixghar.onrender.com/api/services');
+            const response = await fetch(`${this.getApiBase()}/services`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
