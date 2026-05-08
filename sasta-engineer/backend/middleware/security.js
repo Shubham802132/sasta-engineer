@@ -133,18 +133,22 @@ const corsOptions = {
             .split(',')
             .map(s => s.trim())
             .filter(Boolean);
-        
-        const allowedOrigins = [
-            // Vercel production frontend
-            'https://sasta-engineer.vercel.app',
 
+        const isProd = process.env.NODE_ENV === 'production';
+
+        // Production: only allow deployed origins from env (and a safe default fallback)
+        // Development: allow localhost + env origins.
+        const prodDefaults = ['https://sasta-engineer.vercel.app'];
+        const devDefaults = [
             'http://localhost:3030',
             'http://127.0.0.1:3030',
             'http://localhost:3000',
             'http://127.0.0.1:3000',
             'http://localhost:3031',
             'http://127.0.0.1:3031'
-        ].concat(envOrigins);
+        ];
+
+        const allowedOrigins = (isProd ? prodDefaults : prodDefaults.concat(devDefaults)).concat(envOrigins);
         
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
