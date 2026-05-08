@@ -125,6 +125,10 @@ class FIXGHARApiService {
     // Authentication Methods
     async registerUser(userData) {
         console.log('🚀 Starting user registration...');
+        console.log('signupPayload (api-service, password redacted)', {
+            ...userData,
+            password: userData?.password ? '[REDACTED]' : userData?.password
+        });
         return this.apiCall('/auth/register/user', 'POST', userData);
     }
 

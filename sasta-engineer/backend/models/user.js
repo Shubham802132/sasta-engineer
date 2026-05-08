@@ -142,7 +142,14 @@ userSchema.methods.getSignedJwtToken = function() {
 userSchema.methods.getRefreshToken = function() {
     const refreshToken = crypto.randomBytes(40).toString('hex');
     this.refreshToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    this.refreshTokenExpire = Date.now() + parseInt(process.env.JWT_REFRESH_EXPIRE) * 24 * 60 * 60 * 1000;
+
+    // JWT_REFRESH_EXPIRE is number of days (same as cookie maxAge helper). Missing/invalid env must not produce NaN.
+    const rawDays = process.env.JWT_REFRESH_EXPIRE;
+    const parsedDays = Number.parseInt(String(rawDays ?? '').replace(/d$/i, '').trim(), 10);
+    const safeDays = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 7;
+    const refreshTokenExpire = new Date(Date.now() + safeDays * 24 * 60 * 60 * 1000);
+    this.refreshTokenExpire = refreshTokenExpire;
+
     return refreshToken;
 };
 

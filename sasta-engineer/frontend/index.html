@@ -1150,9 +1150,9 @@
             
             try {
                 // Get form data
+                const usernameRaw = document.getElementById('userUsername').value;
                 const formData = {
                     name: document.getElementById('userName').value,
-                    username: document.getElementById('userUsername').value,
                     email: document.getElementById('userEmail').value,
                     phone: document.getElementById('userPhone').value,
                     password: document.getElementById('userPassword').value,
@@ -1164,6 +1164,10 @@
                     }
                 };
 
+                // Only include username if non-empty
+                const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
+                if (username) formData.username = username;
+
                 // Validate passwords match
                 const confirmPassword = document.getElementById('userConfirmPassword').value;
                 if (formData.password !== confirmPassword) {
@@ -1171,13 +1175,41 @@
                     return;
                 }
 
-                console.log('🚀 Sending registration data:', formData);
+                const signupPayload = formData;
+                // Exact payload shape sent to API (password redacted in console only)
+                console.log('signupPayload', {
+                    ...signupPayload,
+                    password: signupPayload.password ? '[REDACTED]' : signupPayload.password
+                });
+                console.log('🔍 signup field names check:', {
+                    hasEmailKey: Object.prototype.hasOwnProperty.call(signupPayload, 'email'),
+                    hasPasswordKey: Object.prototype.hasOwnProperty.call(signupPayload, 'password'),
+                    hasPhoneKey: Object.prototype.hasOwnProperty.call(signupPayload, 'phone'),
+                    hasUsernameKey: Object.prototype.hasOwnProperty.call(signupPayload, 'username')
+                });
+                console.log('🔍 localStorage snapshot (no signup overwrite):', {
+                    fixghar_token: localStorage.getItem('fixghar_token') ? '[set]' : '[empty]',
+                    userType: localStorage.getItem('userType'),
+                    fixghar_user: localStorage.getItem('fixghar_user')
+                        ? '[set]'
+                        : '[empty]'
+                });
+
+                console.log('🚀 Outgoing user signup payload (safe):', {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    username: formData.username,
+                    hasPassword: typeof formData.password === 'string' && formData.password.length > 0,
+                    address: formData.address
+                });
+                console.log('🔑 Outgoing signup payload keys:', Object.keys(formData));
 
                 // Create API service instance
                 const apiService = new FIXGHARApiService();
                 
                 // Send registration request
-                const response = await apiService.registerUser(formData);
+                const response = await apiService.registerUser(signupPayload);
                 
                 if (response.success) {
                     console.log('✅ Registration successful:', response);
@@ -1209,9 +1241,9 @@
             
             try {
                 // Get form data
+                const usernameRaw = document.getElementById('fixerUsername').value;
                 const formData = {
                     name: document.getElementById('fixerName').value,
-                    username: document.getElementById('fixerUsername').value,
                     email: document.getElementById('fixerEmail').value,
                     phone: document.getElementById('fixerPhone').value,
                     password: document.getElementById('fixerPassword').value,
@@ -1224,6 +1256,10 @@
                     }
                 };
 
+                // Only include username if non-empty
+                const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
+                if (username) formData.username = username;
+
                 // Validate passwords match
                 const confirmPassword = document.getElementById('fixerConfirmPassword').value;
                 if (formData.password !== confirmPassword) {
@@ -1231,7 +1267,15 @@
                     return;
                 }
 
-                console.log('🚀 Sending fixer registration data:', formData);
+                console.log('🚀 Outgoing fixer signup payload (safe):', {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    username: formData.username,
+                    hasPassword: typeof formData.password === 'string' && formData.password.length > 0,
+                    serviceCategory: formData.serviceCategory,
+                    address: formData.address
+                });
 
                 // Create API service instance
                 const apiService = new FIXGHARApiService();
