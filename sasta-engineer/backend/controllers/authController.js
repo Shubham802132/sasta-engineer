@@ -66,25 +66,23 @@ const registerUser = async (req, res) => {
         }
 
         const { name, username, email, phone, password, address } = req.body;
+
+        // Full body log for debugging (never log raw password)
+        const bodyForLog = { ...req.body };
+        if (bodyForLog.password) bodyForLog.password = '[REDACTED]';
+        console.log('🧾 registerUser raw req.body:', JSON.stringify(bodyForLog));
+
+        const normalizedEmail =
+            typeof email === 'string' ? email.trim().toLowerCase() : normalizeEmail(email);
+
         const normalized = {
-            email: normalizeEmail(email),
+            email: normalizedEmail,
             username: normalizeUsername(username),
             phone: normalizePhone(phone)
         };
 
-        console.log('🧾 registerUser req.body (safe)', {
-            email,
-            username,
-            phone,
-            hasPassword: typeof password === 'string' && password.length > 0,
-            hasAddress: !!address
-        });
-
-        console.log('📧 registerUser email normalize', {
-            rawEmail: typeof email === 'string' ? email : typeof email,
-            normalizedEmail: normalized.email,
-            isEmailEmpty: !normalized.email
-        });
+        console.log('📧 registerUser received email:', email);
+        console.log('📧 registerUser normalized email:', normalized.email);
 
         console.log('📝 User registration attempt', {
             email: normalized.email,
@@ -92,6 +90,10 @@ const registerUser = async (req, res) => {
             phone: normalized.phone,
             hasAddress: !!address
         });
+
+        const skipEmailDup =
+            process.env.SKIP_REGISTRATION_EMAIL_DUPLICATE_CHECK === 'true';
+        const debugRegistration = process.env.DEBUG_REGISTRATION === 'true';
 
         // Duplicate checks (only for non-empty values)
         const duplicateCheck = {
@@ -101,20 +103,60 @@ const registerUser = async (req, res) => {
         };
         console.log('🔎 Duplicate check conditions', duplicateCheck);
 
-        if (duplicateCheck.email) {
-            const emailExists = await User.findOne({ email: duplicateCheck.email }).select('_id email');
-            console.log('🔎 Duplicate query result (email)', {
-                email: duplicateCheck.email,
+        if (duplicateCheck.email && !skipEmailDup) {
+            const emailQuery = { email: normalized.email };
+            console.log(
+                '🔎 MongoDB duplicate query (email): User.findOne(',
+                JSON.stringify(emailQuery),
+                ')'
+            );
+
+            const emailExists = await User.findOne(emailQuery).select(
+                '_id email username phone createdAt'
+            );
+
+            console.log('🔎 Duplicate query result (email):', {
                 found: !!emailExists,
-                id: emailExists?._id
+                matchedUser: emailExists
+                    ? {
+                          _id: String(emailExists._id),
+                          email: emailExists.email,
+                          username: emailExists.username,
+                          phone: emailExists.phone,
+                          createdAt: emailExists.createdAt
+                      }
+                    : null
             });
+
             if (emailExists) {
-                return res.status(409).json({
+                const payload = {
                     success: false,
                     message: 'Email already exists',
-                    field: 'email'
-                });
+                    field: 'email',
+                    normalizedEmailChecked: normalized.email
+                };
+                if (debugRegistration) {
+                    payload.debug = {
+                        query: emailQuery,
+                        matchedUser: {
+                            _id: String(emailExists._id),
+                            email: emailExists.email,
+                            username: emailExists.username,
+                            phone: emailExists.phone,
+                            createdAt: emailExists.createdAt
+                        }
+                    };
+                }
+                console.log(
+                    '📤 registerUser final response (409 email conflict):',
+                    JSON.stringify(payload)
+                );
+                return res.status(409).json(payload);
             }
+        } else if (duplicateCheck.email && skipEmailDup) {
+            console.warn(
+                '⚠️ SKIP_REGISTRATION_EMAIL_DUPLICATE_CHECK=true — email duplicate check skipped (testing only)'
+            );
         }
 
         if (duplicateCheck.phone) {
@@ -167,7 +209,7 @@ const registerUser = async (req, res) => {
         // Generate token
         const token = user.getSignedJwtToken();
 
-        res.status(201).json({
+        const successBody = {
             success: true,
             message: 'User registered successfully. Please check your phone for OTP verification.',
             data: {
@@ -183,7 +225,24 @@ const registerUser = async (req, res) => {
                 token,
                 otp: otp.otp // Include OTP in response for testing
             }
+        };
+
+        console.log('✅ registerUser saved user:', {
+            id: String(user._id),
+            email: user.email,
+            phone: user.phone,
+            username: user.username
         });
+        console.log(
+            '📤 registerUser final response (201):',
+            JSON.stringify({
+                success: successBody.success,
+                message: successBody.message,
+                userEmail: successBody.data.user.email
+            })
+        );
+
+        res.status(201).json(successBody);
 
     } catch (error) {
         console.error('User registration error:', {
