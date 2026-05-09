@@ -1376,6 +1376,13 @@
                         storage.setItem('fixghar_user_type', selectedRole);
                     }
 
+                    // Debug logs for auth persistence
+                    console.log('🔐 [login] persist:', persist);
+                    console.log('🔐 [login] token(local):', localStorage.getItem('fixghar_token') ? '[set]' : '[empty]');
+                    console.log('🔐 [login] token(session):', sessionStorage.getItem('fixghar_token') ? '[set]' : '[empty]');
+                    console.log('🔐 [login] userType(local):', localStorage.getItem('fixghar_user_type') || '[empty]');
+                    console.log('🔐 [login] userType(session):', sessionStorage.getItem('fixghar_user_type') || '[empty]');
+
                     // Backward-compat display name key (optional)
                     localStorage.setItem('userName', userData.name || (selectedRole === 'fixer' ? 'Fixer' : 'User'));
                     

@@ -820,7 +820,7 @@
                     localStorage.clear();
                     sessionStorage.clear();
                     alert('Logged out successfully!');
-                    window.location.href = '/';
+                    window.location.replace('../index.html');
                 }
             };
         }
@@ -845,14 +845,29 @@
                 ? 'http://localhost:5000/api'
                 : 'https://fixghar.onrender.com/api');
 
+        function getAuthSnapshotForDashboard() {
+            const token =
+                localStorage.getItem('fixghar_token') || sessionStorage.getItem('fixghar_token');
+            const userType =
+                localStorage.getItem('fixghar_user_type') ||
+                sessionStorage.getItem('fixghar_user_type') ||
+                localStorage.getItem('userType') ||
+                sessionStorage.getItem('userType');
+            const persist =
+                localStorage.getItem('fixghar_persist') || sessionStorage.getItem('fixghar_persist');
+
+            console.log('🔐 [auth] token(local):', localStorage.getItem('fixghar_token') ? '[set]' : '[empty]');
+            console.log('🔐 [auth] token(session):', sessionStorage.getItem('fixghar_token') ? '[set]' : '[empty]');
+            console.log('🔐 [auth] userType:', userType || '[empty]');
+            console.log('🔐 [auth] persist:', persist || '[unset]');
+
+            return { token, userType, persist };
+        }
+
         function redirectToLogin(reason) {
-            console.warn('🔒 Redirecting to login:', reason);
-            // Clear potentially stale session
-            localStorage.removeItem('fixghar_token');
-            localStorage.removeItem('fixghar_user');
-            localStorage.removeItem('userType');
-            // Go back to home/login
-            window.location.href = '/';
+            console.warn('🔒 [auth] redirectToLogin reason:', reason);
+            // Do NOT clear storage here (prevents redirect loops on temporary failures)
+            window.location.replace('../index.html');
         }
 
         function setUserSummaryLoading(isLoading) {
@@ -908,38 +923,72 @@
             card.style.display = 'flex';
         }
 
-        async function fetchLoggedInUser() {
-            const token = localStorage.getItem('fixghar_token');
-            const userType = localStorage.getItem('userType');
+        async function fetchLoggedInUser({ attempt = 1 } = {}) {
+            const { token, userType, persist } = getAuthSnapshotForDashboard();
             if (!token) return redirectToLogin('missing token');
             if (userType && userType !== 'user') return redirectToLogin(`wrong role: ${userType}`);
 
+            console.log('✅ [auth] user-dashboard auth check passed');
+
             setUserSummaryLoading(true);
             try {
-                const apiService = new FIXGHARApiService();
-                const me = await apiService.getCurrentUser();
-                const user = me?.data?.user || me?.data?.data?.user || me?.data?.user;
+                const apiService = window.apiService || new FIXGHARApiService();
+
+                // Prefer the user profile endpoint (matches backend logs)
+                const profileRes =
+                    typeof apiService.getUserProfile === 'function'
+                        ? await apiService.getUserProfile()
+                        : await apiService.getCurrentUser();
+
+                const user =
+                    profileRes?.data?.data ||
+                    profileRes?.data?.user ||
+                    profileRes?.data?.data?.user ||
+                    profileRes?.data;
+
                 if (!user) throw new Error('Profile response missing user');
 
-                // Persist user snapshot for refresh speed (non-sensitive)
-                localStorage.setItem('fixghar_user', JSON.stringify(user));
-                localStorage.setItem('userType', 'user');
-                localStorage.setItem('userName', user.name || 'User');
+                // Persist user snapshot using current persistence mode
+                const storage = persist === 'session' ? sessionStorage : localStorage;
+                storage.setItem('fixghar_user_data', JSON.stringify(user));
+                storage.setItem('fixghar_user_type', 'user');
+                localStorage.setItem('userName', user.name || 'User'); // harmless display key
+
+                // Backward-compat snapshot (optional)
+                storage.setItem('fixghar_user', JSON.stringify(user));
 
                 renderUserSummary(user);
                 return user;
             } catch (e) {
-                console.error('❌ Failed to fetch /auth/me:', e);
-                setUserSummaryError(e?.message || 'Failed to load profile.');
-                if (String(e?.message || '').toLowerCase().includes('not authorized')) {
-                    redirectToLogin('token invalid');
+                const msg = e?.message || 'Failed to load profile.';
+                console.error(`❌ [profile] fetch failed (attempt ${attempt}):`, e);
+                setUserSummaryError(msg);
+
+                // Retry once before redirecting
+                if (attempt < 2) {
+                    console.warn('🔁 [profile] retrying once...');
+                    return fetchLoggedInUser({ attempt: attempt + 1 });
+                }
+
+                const low = String(msg).toLowerCase();
+                const unauthorized =
+                    low.includes('not authorized') || low.includes('unauthorized') || low.includes('401');
+                if (unauthorized) {
+                    console.warn('🔒 [auth] profile unauthorized after retry, redirecting');
+                    redirectToLogin('profile unauthorized');
+                } else {
+                    console.warn('⚠️ [profile] failed but token exists; staying on dashboard');
                 }
                 return null;
             }
         }
 
         function showUserProfile() {
-            const cached = localStorage.getItem('fixghar_user');
+            const cached =
+                localStorage.getItem('fixghar_user_data') ||
+                sessionStorage.getItem('fixghar_user_data') ||
+                localStorage.getItem('fixghar_user') ||
+                sessionStorage.getItem('fixghar_user');
             const user = cached ? JSON.parse(cached) : null;
             if (!user) {
                 showModernAlert('Profile', 'Loading your profile…', 'info');
@@ -976,17 +1025,8 @@
             }
         }
 
-        // Auth gate + auto-fetch
-        document.addEventListener('DOMContentLoaded', () => {
-            // Quick render from cached snapshot
-            try {
-                const cached = localStorage.getItem('fixghar_user');
-                const token = localStorage.getItem('fixghar_token');
-                if (!token) return redirectToLogin('missing token');
-                if (cached) renderUserSummary(JSON.parse(cached));
-            } catch {}
-            fetchLoggedInUser();
-        });
+        // NOTE: Do not add another auth gate here.
+        // The top-of-file auth/profile loader already guards + fetches profile.
 
         // Fetch and display real fixers from database
         async function loadTopFixers() {
