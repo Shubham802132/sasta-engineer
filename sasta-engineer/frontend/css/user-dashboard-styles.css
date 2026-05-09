@@ -25,8 +25,8 @@
 
 /* Logged-in user summary */
 .user-summary-card {
-    max-width: 1200px;
-    margin: 12px auto 0;
+    max-width: none;
+    margin: 0 0 16px 0;
     background: #fff;
     border-radius: 16px;
     padding: 14px 16px;
@@ -95,8 +95,8 @@
 
 .user-summary-loading,
 .user-summary-error {
-    max-width: 1200px;
-    margin: 12px auto 0;
+    max-width: none;
+    margin: 0 0 16px 0;
     padding: 10px 12px;
     border-radius: 12px;
     font-size: 14px;
@@ -548,28 +548,39 @@
 }
 
 .user-dashboard .sidebar {
-    position: relative;
-    z-index: 5;
+    /* keep sidebar pinned on the left (do not break base layout) */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
     pointer-events: auto;
 }
 
 .user-dashboard .main-content {
+    /* align main content to top beside fixed sidebar */
     position: relative;
     z-index: 1;
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding: 30px;
+    box-sizing: border-box;
 }
 
 .user-dashboard .dashboard-container {
     display: flex;
-    flex-direction: column;
     min-height: 100vh;
-    padding: 20px;
-    gap: 20px;
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
 }
 
 /* Logged-in user summary card */
 .user-summary-card {
-    max-width: 1200px;
-    margin: 10px auto 18px auto;
+    max-width: none;
+    width: 100%;
+    margin: 0 0 18px 0;
     background: white;
     border-radius: 16px;
     padding: 18px;
@@ -880,8 +891,9 @@
 
 .user-summary-loading,
 .user-summary-error {
-    max-width: 1200px;
-    margin: 10px auto 18px auto;
+    max-width: none;
+    width: 100%;
+    margin: 0 0 18px 0;
     padding: 14px 18px;
     border-radius: 14px;
     font-weight: 600;
@@ -906,7 +918,7 @@
     align-items: center;
     margin-top: -10px;
     margin-bottom: 20px;
-    margin-right: 200px;
+    margin-right: 0;
     gap: 15px;
 }
 
@@ -1001,9 +1013,9 @@
     text-align: left;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 15px 15px 0 0;
-    margin-left: 200px;
-    margin-right: 200px;
-    max-width: 1200px;
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
 }
 
 .user-dashboard .section-header h2 {
@@ -1101,6 +1113,15 @@
         gap: 20px;
     }
     
+}
+
+/* Mobile: sidebar collapses (base CSS slides it off-canvas); main content must be full width */
+@media (max-width: 768px) {
+    .user-dashboard .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 20px;
+    }
 }
 
 @media (max-width: 480px) {
