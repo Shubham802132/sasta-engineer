@@ -831,6 +831,7 @@ const getMe = async (req, res) => {
                     email: user.email,
                     username: user.username,
                     phone: user.phone,
+                    profilePicture: user.profilePicture || '',
                     role: req.user.role,
                     isPhoneVerified: user.isPhoneVerified,
                     address: user.address,
