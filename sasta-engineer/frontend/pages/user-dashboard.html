@@ -314,6 +314,28 @@
                 return window.apiService;
             }
 
+            function resolveApiBase() {
+                // Prefer configured apiService baseURL; fall back to FIXGHAR_CONFIG; finally to deployed URL.
+                const svc = ensureApiService();
+                const fromSvc = svc?.baseURL;
+                const fromCfg = window.FIXGHAR_CONFIG?.api?.baseURL;
+
+                // Local dev only when running on localhost
+                const isLocalHost =
+                    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (isLocalHost) {
+                    return fromCfg || fromSvc || 'http://localhost:5000/api';
+                }
+
+                // Production: always use https deployed URL to avoid mixed-content failures
+                const deployed = 'https://fixghar.onrender.com/api';
+                const chosen = fromCfg || fromSvc || deployed;
+                return String(chosen).replace(/^http:\/\//i, 'https://');
+            }
+
+            window.DASHBOARD_API_BASE = window.DASHBOARD_API_BASE || resolveApiBase();
+            console.log('🌐 [dashboard] API base:', window.DASHBOARD_API_BASE);
+
             // Ensure showModernAlert exists (many dashboard actions rely on it)
             window.showModernAlert = window.showModernAlert || function showModernAlert(title, message, type = 'info') {
                 // Basic, non-blocking modal alert
@@ -622,6 +644,67 @@
 
             // ---------- Event listeners (robust) ----------
             document.addEventListener('DOMContentLoaded', () => {
+                // Sidebar navigation (keep sidebar UI unchanged; just wire clicks)
+                const sidebar = document.querySelector('.sidebar-nav');
+                if (sidebar) {
+                    sidebar.addEventListener('click', (e) => {
+                        const li = e.target.closest('li');
+                        if (!li) return;
+
+                        const label = (li.textContent || '').trim().toLowerCase();
+                        const services = document.getElementById('servicesSection');
+                        const fixers = document.getElementById('availableFixersSection');
+                        const tracking = document.getElementById('trackingSection');
+                        const bookings = document.getElementById('bookingHistoryCards');
+
+                        const showOnly = (idsToShow) => {
+                            const all = [services, fixers, tracking, bookings?.closest('.booking-history-cards')].filter(Boolean);
+                            all.forEach((el) => {
+                                // bookingHistoryCards is inside a container; we toggle the container
+                                if (el === bookings?.closest('.booking-history-cards')) {
+                                    el.style.display = idsToShow.includes('bookings') ? '' : 'none';
+                                } else {
+                                    el.style.display = idsToShow.includes(el.id) ? '' : 'none';
+                                }
+                            });
+                        };
+
+                        const scrollTo = (el) => el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+
+                        if (label.includes('dashboard')) {
+                            // Default dashboard view: show major sections
+                            if (services) services.style.display = '';
+                            if (fixers) fixers.style.display = '';
+                            if (tracking) tracking.style.display = '';
+                            // bookings section stays visible as-is
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            return;
+                        }
+
+                        if (label.includes('bookings')) {
+                            scrollTo(bookings);
+                            window.loadRecentBookings?.();
+                            return;
+                        }
+
+                        if (label.includes('services')) {
+                            if (services) scrollTo(services);
+                            return;
+                        }
+
+                        if (label.includes('tasks')) {
+                            safeAlert('Tasks', 'Tasks section is not available on this dashboard yet.', 'info');
+                            return;
+                        }
+
+                        if (label.includes('fixers')) {
+                            if (fixers) scrollTo(fixers);
+                            window.loadAvailableFixers?.();
+                            return;
+                        }
+                    });
+                }
+
                 // Refresh button(s)
                 document.querySelectorAll('.refresh-services-btn').forEach((btn) => {
                     btn.addEventListener('click', (e) => {
@@ -1032,8 +1115,10 @@
         async function loadTopFixers() {
             try {
                 console.log('🔄 Loading top fixers from database...');
+                const base = window.DASHBOARD_API_BASE || API_BASE;
+                console.log('🌐 loadTopFixers base:', base);
                 
-                const response = await fetch(`${API_BASE}/fixers`, {
+                const response = await fetch(`${base}/fixers`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1174,8 +1259,9 @@
         async function loadServiceProviders() {
             try {
                 console.log('🔄 Loading service providers from database...');
+                const base = window.DASHBOARD_API_BASE || API_BASE;
                 
-                const response = await fetch(`${API_BASE}/fixers`, {
+                const response = await fetch(`${base}/fixers`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1269,7 +1355,8 @@
                 });
                 
                 // Fetch fixer details from API
-                const response = await fetch(`${API_BASE}/fixers/${fixerId}`, {
+                const base = window.DASHBOARD_API_BASE || API_BASE;
+                const response = await fetch(`${base}/fixers/${fixerId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1488,8 +1575,9 @@
         async function loadAvailableFixers() {
             try {
                 console.log('🔄 Loading available fixers...');
+                const base = window.DASHBOARD_API_BASE || API_BASE;
                 
-                const response = await fetch(`${API_BASE}/fixers`, {
+                const response = await fetch(`${base}/fixers`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
