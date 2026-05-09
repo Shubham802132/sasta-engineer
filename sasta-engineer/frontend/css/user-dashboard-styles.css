@@ -547,6 +547,22 @@
     font-family: 'Inter', sans-serif;
 }
 
+/* Prevent horizontal scroll on dashboard */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.user-dashboard .dashboard-container,
+.user-dashboard .main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.user-dashboard .main-content {
+    min-width: 0; /* critical for flex overflow */
+}
+
 .user-dashboard .sidebar {
     /* keep sidebar pinned on the left (do not break base layout) */
     position: fixed;
