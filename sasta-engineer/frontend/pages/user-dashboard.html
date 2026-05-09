@@ -117,6 +117,27 @@
                 </div>
             </div>
 
+            <!-- Logged-in user summary (auto-filled) -->
+            <div class="user-summary-card" id="userSummaryCard" style="display: none;">
+                <div class="user-summary-left">
+                    <div class="user-summary-avatar" id="userSummaryAvatar">U</div>
+                    <div class="user-summary-meta">
+                        <div class="user-summary-name" id="userSummaryName">Loading...</div>
+                        <div class="user-summary-sub" id="userSummaryEmail"></div>
+                        <div class="user-summary-sub" id="userSummaryPhone"></div>
+                        <div class="user-summary-sub" id="userSummaryAddress"></div>
+                    </div>
+                </div>
+                <div class="user-summary-actions">
+                    <button class="user-summary-btn" type="button" onclick="showUserProfile()">View Profile</button>
+                </div>
+            </div>
+
+            <div class="user-summary-loading" id="userSummaryLoading" style="display: none;">
+                Loading your profile…
+            </div>
+            <div class="user-summary-error" id="userSummaryError" style="display: none;"></div>
+
             <!-- Hero Banner -->
             <div class="hero-banner">
                 <div class="banner-content">
@@ -275,10 +296,518 @@
 
     <script src="../config.js"></script>
     <script src="../js/api-service.js"></script>
+    <script src="../js/state-service.js"></script>
     <!-- Removed missing scripts:
          - ../scripts/user-dashboard-script.js
          - ../scripts/enhanced-track.js
          (They were causing 404s in production.) -->
+
+    <!-- Dashboard action handlers (fix button clicks) -->
+    <script>
+        (function () {
+            const $ = (sel, root = document) => root.querySelector(sel);
+
+            function ensureApiService() {
+                if (!window.apiService && typeof FIXGHARApiService === 'function') {
+                    window.apiService = new FIXGHARApiService();
+                }
+                return window.apiService;
+            }
+
+            // Ensure showModernAlert exists (many dashboard actions rely on it)
+            window.showModernAlert = window.showModernAlert || function showModernAlert(title, message, type = 'info') {
+                // Basic, non-blocking modal alert
+                const existing = document.querySelector('.modern-alert-overlay');
+                if (existing) existing.remove();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'modern-alert-overlay';
+                overlay.innerHTML = `
+                    <div class="modern-alert">
+                        <div class="modern-alert-header">${title || 'Notification'}</div>
+                        <div class="modern-alert-body">
+                            <p class="modern-alert-message">${String(message || '')}</p>
+                            <div class="modern-alert-buttons">
+                                <button class="modern-alert-button primary" type="button">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.querySelector('button')?.addEventListener('click', () => overlay.remove());
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) overlay.remove();
+                });
+            };
+
+            function safeAlert(title, message, type = 'info') {
+                if (typeof window.showModernAlert === 'function') {
+                    window.showModernAlert(title, message, type);
+                } else {
+                    alert(`${title}\n\n${message}`);
+                }
+            }
+
+            // ---------- Missing functions (define safely) ----------
+            window.toggleSearchBar = window.toggleSearchBar || function toggleSearchBar() {
+                const el = document.getElementById('searchBar');
+                if (!el) return;
+                const isHidden = el.style.display === 'none' || !el.style.display;
+                el.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden) el.querySelector('input')?.focus?.();
+            };
+
+            // Generic modal helper used by fixer details, etc.
+            window.createModal = window.createModal || function createModal(html) {
+                const existing = document.querySelector('.modal-overlay');
+                if (existing) existing.remove();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = `
+                    <div class="modal-container">
+                        <button class="modal-close" type="button" aria-label="Close">×</button>
+                        <div class="modal-content-area">${html || ''}</div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                const close = () => overlay.remove();
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) close();
+                });
+                overlay.querySelector('.modal-close')?.addEventListener('click', close);
+                window.closeModal = close;
+                return overlay;
+            };
+
+            window.closeModal = window.closeModal || function closeModal() {
+                document.querySelector('.modal-overlay')?.remove();
+            };
+
+            window.openBookingForm = window.openBookingForm || function openBookingForm() {
+                openBookingModal({ service: '' });
+            };
+
+            window.bookService = window.bookService || function bookService(serviceKey) {
+                openBookingModal({ service: serviceKey || '' });
+            };
+
+            // Some existing code calls showBookingModal(...)
+            window.showBookingModal = window.showBookingModal || function showBookingModal(serviceKey) {
+                openBookingModal({ service: serviceKey || '' });
+            };
+
+            window.showBookings = window.showBookings || function showBookings() {
+                document.getElementById('bookingHistoryCards')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+                if (typeof window.loadRecentBookings === 'function') {
+                    window.loadRecentBookings();
+                }
+            };
+
+            // Booking modal (create if not present)
+            function openBookingModal({ service } = {}) {
+                // Reuse existing overlay if present
+                let overlay = document.getElementById('bookingModalOverlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'bookingModalOverlay';
+                    overlay.className = 'booking-modal-overlay';
+                    overlay.innerHTML = `
+                        <div class="booking-modal" role="dialog" aria-modal="true" aria-label="Create booking">
+                            <button class="booking-modal-close" type="button" aria-label="Close">×</button>
+                            <h3 class="booking-modal-title">Book a Service</h3>
+                            <p class="booking-modal-sub">Fill details and submit. We’ll create a booking request.</p>
+
+                            <form id="bookingForm" class="booking-form">
+                                <div class="booking-grid">
+                                    <label class="booking-field">
+                                        <span>Service</span>
+                                        <select name="service" id="bookingService" required>
+                                            <option value="" disabled selected>Select service</option>
+                                            <option value="plumbing">Plumbing</option>
+                                            <option value="electrical">Electrical</option>
+                                            <option value="painting">Painting</option>
+                                            <option value="carpentry">Carpentry</option>
+                                            <option value="general">General Repair</option>
+                                        </select>
+                                    </label>
+
+                                    <label class="booking-field">
+                                        <span>Preferred Date</span>
+                                        <input type="date" name="preferredDate" id="bookingPreferredDate" required />
+                                    </label>
+
+                                    <label class="booking-field">
+                                        <span>Preferred Time</span>
+                                        <select name="preferredTime" id="bookingPreferredTime" required>
+                                            <option value="morning">Morning</option>
+                                            <option value="afternoon">Afternoon</option>
+                                            <option value="evening">Evening</option>
+                                        </select>
+                                    </label>
+
+                                    <label class="booking-field booking-field-full">
+                                        <span>Address</span>
+                                        <input type="text" name="address" id="bookingAddress" placeholder="Street / landmark / area" required />
+                                    </label>
+
+                                    <label class="booking-field booking-field-full">
+                                        <span>Description</span>
+                                        <textarea name="description" id="bookingDescription" rows="3" placeholder="Describe your issue..." required></textarea>
+                                    </label>
+                                </div>
+
+                                <div class="booking-actions">
+                                    <button type="button" class="booking-btn secondary" id="bookingCancelBtn">Cancel</button>
+                                    <button type="submit" class="booking-btn primary" id="bookingSubmitBtn">Submit Booking</button>
+                                </div>
+                                <div class="booking-status" id="bookingStatus" aria-live="polite"></div>
+                            </form>
+                        </div>
+                    `;
+                    document.body.appendChild(overlay);
+
+                    // Close handlers
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) closeBookingModal();
+                    });
+                    overlay.querySelector('.booking-modal-close')?.addEventListener('click', closeBookingModal);
+                    overlay.querySelector('#bookingCancelBtn')?.addEventListener('click', closeBookingModal);
+
+                    // Submit handler
+                    overlay.querySelector('#bookingForm')?.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const svc = ensureApiService();
+                        if (!svc || typeof svc.createBooking !== 'function') {
+                            safeAlert('Booking', 'Booking API is not available.', 'error');
+                            return;
+                        }
+
+                        const statusEl = overlay.querySelector('#bookingStatus');
+                        const submitBtn = overlay.querySelector('#bookingSubmitBtn');
+                        const form = e.target;
+                        const payload = {
+                            service: String(form.service.value || ''),
+                            preferredDate: String(form.preferredDate.value || ''),
+                            preferredTime: String(form.preferredTime.value || ''),
+                            address: String(form.address.value || ''),
+                            description: String(form.description.value || '')
+                        };
+
+                        try {
+                            if (submitBtn) submitBtn.disabled = true;
+                            if (statusEl) {
+                                statusEl.className = 'booking-status info';
+                                statusEl.textContent = 'Submitting…';
+                            }
+
+                            const res = await svc.createBooking(payload);
+                            if (statusEl) {
+                                statusEl.className = 'booking-status success';
+                                statusEl.textContent = res?.message || 'Booking created successfully!';
+                            }
+
+                            // Refresh bookings + tracking
+                            window.loadRecentBookings?.();
+                            window.loadActiveBookings?.();
+
+                            setTimeout(closeBookingModal, 800);
+                        } catch (err) {
+                            if (statusEl) {
+                                statusEl.className = 'booking-status error';
+                                statusEl.textContent = err?.message || 'Failed to create booking.';
+                            }
+                        } finally {
+                            if (submitBtn) submitBtn.disabled = false;
+                        }
+                    });
+                }
+
+                // Prefill service + date
+                const svcSelect = overlay.querySelector('#bookingService');
+                if (svcSelect && service) {
+                    const normalized = String(service).toLowerCase();
+                    const map = { plumbing: 'plumbing', painting: 'painting', carpentry: 'carpentry', general: 'general', electrical: 'electrical' };
+                    const value = map[normalized] || normalized;
+                    svcSelect.value = value;
+                }
+                const dateEl = overlay.querySelector('#bookingPreferredDate');
+                if (dateEl && !dateEl.value) {
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    dateEl.value = `${yyyy}-${mm}-${dd}`;
+                }
+
+                overlay.style.display = 'flex';
+                overlay.querySelector('#bookingService')?.focus?.();
+            }
+
+            function closeBookingModal() {
+                const overlay = document.getElementById('bookingModalOverlay');
+                if (overlay) overlay.style.display = 'none';
+            }
+
+            // ---------- Data refresh actions ----------
+            window.refreshDashboardData = window.refreshDashboardData || function refreshDashboardData() {
+                try { window.loadTopFixers?.(); } catch {}
+                try { window.loadAvailableFixers?.(); } catch {}
+                try { window.loadRecentBookings?.(); } catch {}
+                try { window.loadActiveBookings?.(); } catch {}
+                safeAlert('Refresh', 'Refreshing dashboard data…', 'info');
+            };
+
+            // Provide missing loaders (so existing DOMContentLoaded calls don’t crash)
+            window.loadRecentBookings = window.loadRecentBookings || async function loadRecentBookings() {
+                const svc = ensureApiService();
+                const container = document.getElementById('bookingHistoryCards');
+                if (!container) return;
+
+                try {
+                    const res = await svc.getUserBookings();
+                    const bookings = res?.data?.data || res?.data || [];
+                    if (!Array.isArray(bookings) || bookings.length === 0) return;
+
+                    container.innerHTML = bookings.slice(0, 6).map((b) => {
+                        const title = b?.service || b?.serviceCategory || 'Service';
+                        const status = b?.status || 'pending';
+                        const desc = b?.description || b?.bookingDetails?.description || '';
+                        const when = b?.preferredDate || b?.bookingDetails?.preferredDate || b?.createdAt;
+                        const dateText = when ? new Date(when).toLocaleString() : '';
+                        return `
+                            <div class="booking-card">
+                                <div class="booking-card-top">
+                                    <div class="booking-title">${title}</div>
+                                    <div class="booking-status-pill status-${status}">${status}</div>
+                                </div>
+                                <div class="booking-desc">${desc || '—'}</div>
+                                <div class="booking-meta">${dateText}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } catch (err) {
+                    console.warn('loadRecentBookings failed:', err);
+                }
+            };
+
+            window.loadActiveBookings = window.loadActiveBookings || async function loadActiveBookings() {
+                // Minimal: reuse bookings endpoint; render “active” only if present
+                const svc = ensureApiService();
+                const container = document.getElementById('trackingContainer');
+                if (!container) return;
+                try {
+                    const res = await svc.getUserBookings();
+                    const bookings = res?.data?.data || res?.data || [];
+                    const active = Array.isArray(bookings)
+                        ? bookings.filter((b) => ['accepted', 'in_progress', 'ongoing', 'assigned'].includes(String(b?.status || '').toLowerCase()))
+                        : [];
+                    if (active.length === 0) return; // keep existing “No Active Services” UI
+
+                    container.innerHTML = active.slice(0, 3).map((b) => {
+                        const title = b?.service || b?.serviceCategory || 'Service';
+                        const status = b?.status || 'in_progress';
+                        return `
+                            <div class="tracking-card">
+                                <div class="tracking-title">${title}</div>
+                                <div class="tracking-status">Status: ${status}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } catch (err) {
+                    console.warn('loadActiveBookings failed:', err);
+                }
+            };
+
+            // ---------- Event listeners (robust) ----------
+            document.addEventListener('DOMContentLoaded', () => {
+                // Refresh button(s)
+                document.querySelectorAll('.refresh-services-btn').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.refreshDashboardData();
+                    });
+                });
+
+                document.querySelectorAll('.refresh-tracking-btn').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.loadActiveBookings?.();
+                    });
+                });
+
+                // Event delegation for service cards/buttons (dynamic-safe)
+                document.body.addEventListener('click', (e) => {
+                    const serviceBtn = e.target.closest('.service-btn');
+                    if (serviceBtn) {
+                        e.preventDefault();
+                        const card = serviceBtn.closest('.service-card');
+                        const key = card?.getAttribute('data-service');
+                        window.bookService?.(key);
+                        return;
+                    }
+
+                    const serviceCard = e.target.closest('.service-card');
+                    if (serviceCard && !e.target.closest('button, a, input, select, textarea')) {
+                        // clicking card opens booking too
+                        const key = serviceCard.getAttribute('data-service');
+                        window.bookService?.(key);
+                        return;
+                    }
+
+                    // "Try Again" retry buttons inside fixer containers (generated HTML)
+                    const tryAgainBtn = e.target.closest('button');
+                    if (tryAgainBtn && /try again/i.test(tryAgainBtn.textContent || '')) {
+                        const inTop = tryAgainBtn.closest('#topFixersList');
+                        const inAvail = tryAgainBtn.closest('#availableFixersContainer');
+                        if (inTop) {
+                            e.preventDefault();
+                            window.loadTopFixers?.();
+                            return;
+                        }
+                        if (inAvail) {
+                            e.preventDefault();
+                            window.loadAvailableFixers?.();
+                            return;
+                        }
+                    }
+                });
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const redirectToLogin = () => {
+                // from /pages/user-dashboard.html -> /index.html
+                window.location.replace('../index.html');
+            };
+
+            const getAuthSnapshot = () => {
+                const token =
+                    localStorage.getItem('fixghar_token') || sessionStorage.getItem('fixghar_token');
+                const userType =
+                    localStorage.getItem('fixghar_user_type') ||
+                    sessionStorage.getItem('fixghar_user_type') ||
+                    localStorage.getItem('userType') ||
+                    sessionStorage.getItem('userType');
+                return { token, userType };
+            };
+
+            const setVisible = (id, on) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.style.display = on ? '' : 'none';
+            };
+
+            const setText = (id, text) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.textContent = text == null ? '' : String(text);
+            };
+
+            const formatAddress = (address) => {
+                if (!address) return '';
+                const parts = [address.street, address.city, address.state, address.zipCode].filter(Boolean);
+                return parts.join(', ');
+            };
+
+            const renderSummary = (user) => {
+                const avatarEl = document.getElementById('userSummaryAvatar');
+                const initial = (user?.name || user?.email || 'U').trim().charAt(0).toUpperCase() || 'U';
+                const profilePicture = user?.profilePicture || user?.profileImage || '';
+                if (avatarEl) {
+                    if (profilePicture) {
+                        avatarEl.innerHTML = `<img src="${profilePicture}" alt="Profile" />`;
+                    } else {
+                        avatarEl.textContent = initial;
+                    }
+                }
+                setText('userSummaryName', user?.name || 'User');
+                setText('userSummaryEmail', user?.email ? `Email: ${user.email}` : '');
+                setText('userSummaryPhone', user?.phone ? `Phone: ${user.phone}` : '');
+
+                const addr = formatAddress(user?.address);
+                setText('userSummaryAddress', addr ? `Address: ${addr}` : '');
+            };
+
+            const loadUserProfile = async () => {
+                setVisible('userSummaryError', false);
+                setVisible('userSummaryCard', false);
+                setVisible('userSummaryLoading', true);
+
+                try {
+                    // Ensure global apiService exists (api-service.js creates it, but be safe)
+                    if (!window.apiService && typeof FIXGHARApiService === 'function') {
+                        window.apiService = new FIXGHARApiService();
+                    }
+                    const svc = window.apiService;
+                    if (!svc || typeof svc.getUserProfile !== 'function') {
+                        throw new Error('API service not available');
+                    }
+
+                    const res = await svc.getUserProfile();
+                    const user = res?.data?.data || res?.data; // tolerate shapes
+                    if (!user) throw new Error('Invalid profile response');
+
+                    renderSummary(user);
+                    if (window.stateService && typeof window.stateService.updateUserProfile === 'function') {
+                        window.stateService.updateUserProfile(user);
+                    }
+
+                    setVisible('userSummaryLoading', false);
+                    setVisible('userSummaryCard', true);
+                } catch (err) {
+                    const msg = err?.message || 'Failed to load your profile.';
+                    console.error('❌ user profile fetch failed:', err);
+
+                    setVisible('userSummaryLoading', false);
+                    setText('userSummaryError', msg);
+                    setVisible('userSummaryError', true);
+
+                    // If unauthorized, clear auth and redirect to login
+                    const low = String(msg).toLowerCase();
+                    if (low.includes('not authorized') || low.includes('unauthorized') || low.includes('401')) {
+                        if (window.apiService && typeof window.apiService.clearAuth === 'function') {
+                            window.apiService.clearAuth();
+                        }
+                        if (window.stateService && typeof window.stateService.clearAuthenticatedUser === 'function') {
+                            window.stateService.clearAuthenticatedUser();
+                        }
+                        redirectToLogin();
+                    }
+                }
+            };
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // Auth guard: block dashboard if not logged in (or wrong role)
+                const { token, userType } = getAuthSnapshot();
+                if (!token || userType !== 'user') {
+                    redirectToLogin();
+                    return;
+                }
+
+                // Show basic cached user instantly (if available)
+                try {
+                    const cached =
+                        localStorage.getItem('fixghar_user_data') ||
+                        sessionStorage.getItem('fixghar_user_data') ||
+                        localStorage.getItem('fixghar_user') ||
+                        sessionStorage.getItem('fixghar_user');
+                    if (cached) {
+                        renderSummary(JSON.parse(cached));
+                        setVisible('userSummaryCard', true);
+                    }
+                } catch (e) {
+                    // ignore parse errors
+                }
+
+                // Always refresh from API
+                loadUserProfile();
+            });
+        })();
+    </script>
     
     <!-- Fallback logout function if main script fails -->
     <script>
@@ -315,6 +844,149 @@
             || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                 ? 'http://localhost:5000/api'
                 : 'https://fixghar.onrender.com/api');
+
+        function redirectToLogin(reason) {
+            console.warn('🔒 Redirecting to login:', reason);
+            // Clear potentially stale session
+            localStorage.removeItem('fixghar_token');
+            localStorage.removeItem('fixghar_user');
+            localStorage.removeItem('userType');
+            // Go back to home/login
+            window.location.href = '/';
+        }
+
+        function setUserSummaryLoading(isLoading) {
+            const loading = document.getElementById('userSummaryLoading');
+            const card = document.getElementById('userSummaryCard');
+            const err = document.getElementById('userSummaryError');
+            if (loading) loading.style.display = isLoading ? 'block' : 'none';
+            if (err) err.style.display = 'none';
+            if (card && isLoading) card.style.display = 'none';
+        }
+
+        function setUserSummaryError(message) {
+            const loading = document.getElementById('userSummaryLoading');
+            const card = document.getElementById('userSummaryCard');
+            const err = document.getElementById('userSummaryError');
+            if (loading) loading.style.display = 'none';
+            if (card) card.style.display = 'none';
+            if (err) {
+                err.textContent = message || 'Failed to load profile.';
+                err.style.display = 'block';
+            }
+        }
+
+        function renderUserSummary(user) {
+            const card = document.getElementById('userSummaryCard');
+            const loading = document.getElementById('userSummaryLoading');
+            const err = document.getElementById('userSummaryError');
+            if (loading) loading.style.display = 'none';
+            if (err) err.style.display = 'none';
+            if (!card) return;
+
+            const nameEl = document.getElementById('userSummaryName');
+            const emailEl = document.getElementById('userSummaryEmail');
+            const phoneEl = document.getElementById('userSummaryPhone');
+            const addrEl = document.getElementById('userSummaryAddress');
+            const avatarEl = document.getElementById('userSummaryAvatar');
+
+            const name = user?.name || 'User';
+            const email = user?.email ? `Email: ${user.email}` : '';
+            const phone = user?.phone ? `Phone: ${user.phone}` : '';
+            const address = user?.address
+                ? `Address: ${[user.address.street, user.address.city, user.address.state, user.address.zipCode].filter(Boolean).join(', ')}`
+                : '';
+
+            if (nameEl) nameEl.textContent = name;
+            if (emailEl) emailEl.textContent = email;
+            if (phoneEl) phoneEl.textContent = phone;
+            if (addrEl) addrEl.textContent = address;
+
+            // Avatar: image initial fallback (image rendering handled in modal; dashboard uses initial)
+            if (avatarEl) avatarEl.textContent = (name.trim()[0] || 'U').toUpperCase();
+
+            card.style.display = 'flex';
+        }
+
+        async function fetchLoggedInUser() {
+            const token = localStorage.getItem('fixghar_token');
+            const userType = localStorage.getItem('userType');
+            if (!token) return redirectToLogin('missing token');
+            if (userType && userType !== 'user') return redirectToLogin(`wrong role: ${userType}`);
+
+            setUserSummaryLoading(true);
+            try {
+                const apiService = new FIXGHARApiService();
+                const me = await apiService.getCurrentUser();
+                const user = me?.data?.user || me?.data?.data?.user || me?.data?.user;
+                if (!user) throw new Error('Profile response missing user');
+
+                // Persist user snapshot for refresh speed (non-sensitive)
+                localStorage.setItem('fixghar_user', JSON.stringify(user));
+                localStorage.setItem('userType', 'user');
+                localStorage.setItem('userName', user.name || 'User');
+
+                renderUserSummary(user);
+                return user;
+            } catch (e) {
+                console.error('❌ Failed to fetch /auth/me:', e);
+                setUserSummaryError(e?.message || 'Failed to load profile.');
+                if (String(e?.message || '').toLowerCase().includes('not authorized')) {
+                    redirectToLogin('token invalid');
+                }
+                return null;
+            }
+        }
+
+        function showUserProfile() {
+            const cached = localStorage.getItem('fixghar_user');
+            const user = cached ? JSON.parse(cached) : null;
+            if (!user) {
+                showModernAlert('Profile', 'Loading your profile…', 'info');
+                fetchLoggedInUser();
+                return;
+            }
+            const name = user?.name || 'User';
+            const email = user?.email || '';
+            const phone = user?.phone || '';
+            const address = user?.address
+                ? [user.address.street, user.address.city, user.address.state, user.address.zipCode].filter(Boolean).join(', ')
+                : '';
+            const img = user?.profilePicture || '';
+
+            const content = `
+                <div style="display:flex; gap:16px; align-items:center;">
+                    <div style="width:72px; height:72px; border-radius:50%; overflow:hidden; background:#f2f2f2; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:24px;">
+                        ${img ? `<img src="${img}" alt="${name}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'">` : `${(name.trim()[0] || 'U').toUpperCase()}`}
+                    </div>
+                    <div>
+                        <div style="font-size:18px; font-weight:800;">${name}</div>
+                        <div style="color:#666; margin-top:2px;">${email}</div>
+                        <div style="color:#666; margin-top:2px;">${phone}</div>
+                        <div style="color:#666; margin-top:2px;">${address}</div>
+                    </div>
+                </div>
+            `;
+            showModernAlert('Your Profile', ' ', 'info');
+            // Replace alert body content if modern alert exists
+            const overlay = document.querySelector('.modern-alert-overlay');
+            const body = overlay?.querySelector('.modern-alert-body');
+            if (body) {
+                body.innerHTML = content + body.innerHTML;
+            }
+        }
+
+        // Auth gate + auto-fetch
+        document.addEventListener('DOMContentLoaded', () => {
+            // Quick render from cached snapshot
+            try {
+                const cached = localStorage.getItem('fixghar_user');
+                const token = localStorage.getItem('fixghar_token');
+                if (!token) return redirectToLogin('missing token');
+                if (cached) renderUserSummary(JSON.parse(cached));
+            } catch {}
+            fetchLoggedInUser();
+        });
 
         // Fetch and display real fixers from database
         async function loadTopFixers() {

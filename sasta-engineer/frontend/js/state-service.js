@@ -8,6 +8,7 @@ class FIXGHARStateService {
             isAuthenticated: false,
             userType: null,
             token: null,
+            persist: 'local',
             ui: {
                 currentModal: null,
                 isLoading: false,
@@ -25,19 +26,51 @@ class FIXGHARStateService {
         this.init();
     }
 
+    // Storage helpers (support localStorage + sessionStorage)
+    getPersistMode() {
+        const localMode = localStorage.getItem('fixghar_persist');
+        const sessionMode = sessionStorage.getItem('fixghar_persist');
+        return localMode || sessionMode || 'local';
+    }
+
+    getStorage(mode = this.getPersistMode()) {
+        return mode === 'session' ? sessionStorage : localStorage;
+    }
+
+    getStoredItem(key) {
+        // Prefer localStorage, fall back to sessionStorage
+        const fromLocal = localStorage.getItem(key);
+        if (fromLocal !== null && fromLocal !== undefined) return fromLocal;
+        return sessionStorage.getItem(key);
+    }
+
+    removeStoredItem(key) {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    }
+
     // Initialize state from localStorage
     init() {
         try {
             // Load authentication state
-            const token = localStorage.getItem('fixghar_token');
-            const userData = localStorage.getItem('fixghar_user_data');
-            const userType = localStorage.getItem('fixghar_user_type');
+            const persist = this.getPersistMode();
+            const token = this.getStoredItem('fixghar_token');
+            const userData = this.getStoredItem('fixghar_user_data');
+            const userType = this.getStoredItem('fixghar_user_type');
 
-            if (token && userData) {
+            // Backward-compat: migrate old keys if present
+            const legacyUser = this.getStoredItem('fixghar_user');
+            const legacyUserType = this.getStoredItem('userType');
+
+            const resolvedUserData = userData || legacyUser;
+            const resolvedUserType = userType || legacyUserType;
+
+            if (token && resolvedUserData) {
                 this.state.token = token;
-                this.state.user = JSON.parse(userData);
-                this.state.userType = userType;
+                this.state.user = JSON.parse(resolvedUserData);
+                this.state.userType = resolvedUserType;
                 this.state.isAuthenticated = true;
+                this.state.persist = persist;
             }
 
             // Load UI preferences
@@ -95,18 +128,24 @@ class FIXGHARStateService {
     }
 
     // Authentication state management
-    setAuthenticatedUser(userData, token, userType) {
+    setAuthenticatedUser(userData, token, userType, persist = 'local') {
         this.updateState({
             user: userData,
             token: token,
             userType: userType,
-            isAuthenticated: true
+            isAuthenticated: true,
+            persist
         });
 
-        // Store in localStorage
-        localStorage.setItem('fixghar_token', token);
-        localStorage.setItem('fixghar_user_data', JSON.stringify(userData));
-        localStorage.setItem('fixghar_user_type', userType);
+        const storage = this.getStorage(persist);
+        storage.setItem('fixghar_persist', persist);
+        storage.setItem('fixghar_token', token);
+        storage.setItem('fixghar_user_data', JSON.stringify(userData));
+        storage.setItem('fixghar_user_type', userType);
+
+        // Clean up legacy keys to avoid confusion
+        this.removeStoredItem('fixghar_user');
+        this.removeStoredItem('userType');
     }
 
     clearAuthenticatedUser() {
@@ -114,13 +153,17 @@ class FIXGHARStateService {
             user: null,
             token: null,
             userType: null,
-            isAuthenticated: false
+            isAuthenticated: false,
+            persist: 'local'
         });
 
-        // Clear localStorage
-        localStorage.removeItem('fixghar_token');
-        localStorage.removeItem('fixghar_user_data');
-        localStorage.removeItem('fixghar_user_type');
+        // Clear both storages
+        this.removeStoredItem('fixghar_token');
+        this.removeStoredItem('fixghar_user_data');
+        this.removeStoredItem('fixghar_user_type');
+        this.removeStoredItem('fixghar_persist');
+        this.removeStoredItem('fixghar_user');
+        this.removeStoredItem('userType');
     }
 
     // User profile management
@@ -129,8 +172,9 @@ class FIXGHARStateService {
             const updatedUser = { ...this.state.user, ...profileData };
             this.updateState({ user: updatedUser });
             
-            // Update localStorage
-            localStorage.setItem('fixghar_user_data', JSON.stringify(updatedUser));
+            // Update persisted storage
+            const storage = this.getStorage(this.state.persist);
+            storage.setItem('fixghar_user_data', JSON.stringify(updatedUser));
         }
     }
 
@@ -316,25 +360,31 @@ class FIXGHARStateService {
     // Persist state changes to localStorage
     persistState(updates) {
         try {
+            const storage = this.getStorage(this.state.persist);
             // Only persist specific updates
             if (updates.user) {
-                localStorage.setItem('fixghar_user_data', JSON.stringify(updates.user));
+                storage.setItem('fixghar_user_data', JSON.stringify(updates.user));
             }
             
             if (updates.token !== undefined) {
                 if (updates.token) {
-                    localStorage.setItem('fixghar_token', updates.token);
+                    storage.setItem('fixghar_token', updates.token);
                 } else {
-                    localStorage.removeItem('fixghar_token');
+                    this.removeStoredItem('fixghar_token');
                 }
             }
             
             if (updates.userType !== undefined) {
                 if (updates.userType) {
-                    localStorage.setItem('fixghar_user_type', updates.userType);
+                    storage.setItem('fixghar_user_type', updates.userType);
                 } else {
-                    localStorage.removeItem('fixghar_user_type');
+                    this.removeStoredItem('fixghar_user_type');
                 }
+            }
+
+            if (updates.persist) {
+                const newStorage = this.getStorage(updates.persist);
+                newStorage.setItem('fixghar_persist', updates.persist);
             }
         } catch (error) {
             console.error('Error persisting state:', error);

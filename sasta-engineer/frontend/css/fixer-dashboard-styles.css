@@ -31,6 +31,162 @@
     margin-bottom: 2rem;
 }
 
+/* Logged-in fixer summary card */
+.fixer-summary-card {
+    background: white;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(239, 134, 13, 0.18);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.fixer-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.fixer-summary-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef860d 0%, #a17006 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.fixer-summary-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.fixer-summary-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.fixer-summary-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.fixer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.04);
+    color: #333;
+}
+
+.fixer-badge.category {
+    background: rgba(239, 134, 13, 0.10);
+    border-color: rgba(239, 134, 13, 0.25);
+    color: #7a4a14;
+}
+
+.fixer-badge.rating {
+    background: rgba(255, 193, 7, 0.10);
+    border-color: rgba(255, 193, 7, 0.28);
+    color: #6b4d00;
+}
+
+.fixer-badge.status.online {
+    background: rgba(76, 175, 80, 0.12);
+    border-color: rgba(76, 175, 80, 0.25);
+    color: #1f6a23;
+}
+
+.fixer-badge.status.offline {
+    background: rgba(244, 67, 54, 0.10);
+    border-color: rgba(244, 67, 54, 0.22);
+    color: #8c2a22;
+}
+
+.fixer-summary-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 720px;
+}
+
+.fixer-summary-sub {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 720px;
+}
+
+.fixer-summary-actions {
+    display: flex;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.fixer-summary-btn {
+    background: linear-gradient(135deg, #ef860d 0%, #a17006 100%);
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fixer-summary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(239, 134, 13, 0.25);
+}
+
+.fixer-summary-loading,
+.fixer-summary-error {
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.fixer-summary-loading {
+    background: rgba(239, 134, 13, 0.08);
+    border: 1px solid rgba(239, 134, 13, 0.18);
+    color: #7a3b23;
+}
+
+.fixer-summary-error {
+    background: rgba(244, 67, 54, 0.08);
+    border: 1px solid rgba(244, 67, 54, 0.18);
+    color: #9b2c24;
+}
+
 /* Fixer Dashboard Hero Banner */
 .fixer-dashboard .hero-banner {
     background: linear-gradient(135deg, #dec60b 0%, #a17006 100%);

@@ -119,6 +119,32 @@
                 </div>
             </div>
 
+            <!-- Logged-in fixer summary (auto-filled) -->
+            <div class="fixer-summary-card" id="fixerSummaryCard" style="display: none;">
+                <div class="fixer-summary-left">
+                    <div class="fixer-summary-avatar" id="fixerSummaryAvatar">F</div>
+                    <div class="fixer-summary-meta">
+                        <div class="fixer-summary-name" id="fixerSummaryName">Loading...</div>
+                        <div class="fixer-summary-badges">
+                            <span class="fixer-badge category" id="fixerSummaryCategory" style="display:none;"></span>
+                            <span class="fixer-badge status" id="fixerSummaryStatus" style="display:none;"></span>
+                            <span class="fixer-badge rating" id="fixerSummaryRating" style="display:none;"></span>
+                        </div>
+                        <div class="fixer-summary-sub" id="fixerSummaryEmail"></div>
+                        <div class="fixer-summary-sub" id="fixerSummaryPhone"></div>
+                        <div class="fixer-summary-sub" id="fixerSummaryAddress"></div>
+                    </div>
+                </div>
+                <div class="fixer-summary-actions">
+                    <button class="fixer-summary-btn" type="button" onclick="showProfileModal()">View Profile</button>
+                </div>
+            </div>
+
+            <div class="fixer-summary-loading" id="fixerSummaryLoading" style="display: none;">
+                Loading your profile…
+            </div>
+            <div class="fixer-summary-error" id="fixerSummaryError" style="display: none;"></div>
+
         <!-- Hero Banner -->
         <div class="hero-banner">
             <div class="banner-background">
@@ -180,6 +206,7 @@
 
     <script src="../config.js"></script>
     <script src="../js/api-service.js"></script>
+    <script src="../js/state-service.js"></script>
     <!-- Removed missing script:
          - ../scripts/fixer-dashboard-script.js
          (It was causing 404s in production.) -->
@@ -2128,20 +2155,41 @@
             console.log('🚀 Fixer Dashboard DOM loaded');
             
             // Check authentication
-            const userType = localStorage.getItem('userType');
-            const token = localStorage.getItem('fixghar_token');
+            const userType =
+                localStorage.getItem('fixghar_user_type') ||
+                sessionStorage.getItem('fixghar_user_type') ||
+                localStorage.getItem('userType') ||
+                sessionStorage.getItem('userType');
+            const token =
+                localStorage.getItem('fixghar_token') || sessionStorage.getItem('fixghar_token');
             
             if (!token) {
-                alert('Please login first!');
-                window.location.href = '/';
+                window.location.replace('../index.html');
                 return;
             }
             
             if (userType !== 'fixer') {
-                alert('This dashboard is only for fixers. You are logged in as: ' + (userType || 'user'));
-                window.location.href = '/pages/user-dashboard.html';
+                // Wrong role: send back to login
+                window.location.replace('../index.html');
                 return;
             }
+
+            // Load fixer summary (cached first, then API)
+            try {
+                const cached =
+                    localStorage.getItem('fixghar_user_data') ||
+                    sessionStorage.getItem('fixghar_user_data') ||
+                    localStorage.getItem('fixghar_user') ||
+                    sessionStorage.getItem('fixghar_user');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    renderFixerSummary(parsed);
+                    setFixerSummaryVisible(true);
+                }
+            } catch (e) {
+                // ignore
+            }
+            loadFixerProfileSummary();
             
             // Load dashboard data
             loadDashboardData();
@@ -2165,6 +2213,142 @@
                 loadFixerProfileOnStartup();
         }, 1000);
         });
+
+        function setFixerSummaryVisible(isVisible) {
+            const card = document.getElementById('fixerSummaryCard');
+            if (card) card.style.display = isVisible ? '' : 'none';
+        }
+
+        function setFixerSummaryState({ loading, error }) {
+            const loadingEl = document.getElementById('fixerSummaryLoading');
+            const errorEl = document.getElementById('fixerSummaryError');
+            const card = document.getElementById('fixerSummaryCard');
+            if (loadingEl) loadingEl.style.display = loading ? '' : 'none';
+            if (errorEl) errorEl.style.display = error ? '' : 'none';
+            if (errorEl) errorEl.textContent = error || '';
+            if (card && loading) card.style.display = 'none';
+        }
+
+        function formatFixerAddress(address) {
+            if (!address) return '';
+            const parts = [address.street, address.city, address.state, address.zipCode].filter(Boolean);
+            return parts.join(', ');
+        }
+
+        function renderFixerSummary(fixer) {
+            const avatarEl = document.getElementById('fixerSummaryAvatar');
+            const nameEl = document.getElementById('fixerSummaryName');
+            const categoryEl = document.getElementById('fixerSummaryCategory');
+            const statusEl = document.getElementById('fixerSummaryStatus');
+            const ratingEl = document.getElementById('fixerSummaryRating');
+            const emailEl = document.getElementById('fixerSummaryEmail');
+            const phoneEl = document.getElementById('fixerSummaryPhone');
+            const addrEl = document.getElementById('fixerSummaryAddress');
+
+            const initial = (fixer?.name || fixer?.email || 'F').trim().charAt(0).toUpperCase() || 'F';
+            const profilePicture = fixer?.profileImage || fixer?.profilePicture || fixer?.documents?.profilePicture || '';
+            const category = fixer?.serviceCategory || fixer?.professionalInfo?.serviceCategory || '';
+            const isOnline = fixer?.isOnline === true;
+            const ratingAvg = fixer?.rating?.average ?? fixer?.averageRating;
+            const ratingTotal = fixer?.rating?.totalReviews ?? fixer?.totalReviews;
+
+            if (avatarEl) {
+                if (profilePicture) {
+                    avatarEl.innerHTML = `<img src="${profilePicture}" alt="Profile" />`;
+                } else {
+                    avatarEl.textContent = initial;
+                }
+            }
+
+            if (nameEl) nameEl.textContent = fixer?.name || 'Fixer';
+
+            if (categoryEl) {
+                if (category) {
+                    categoryEl.style.display = '';
+                    categoryEl.textContent = category;
+                } else {
+                    categoryEl.style.display = 'none';
+                    categoryEl.textContent = '';
+                }
+            }
+
+            if (statusEl) {
+                statusEl.style.display = '';
+                statusEl.textContent = isOnline ? 'Online' : 'Offline';
+                statusEl.classList.toggle('online', isOnline);
+                statusEl.classList.toggle('offline', !isOnline);
+            }
+
+            if (ratingEl) {
+                const hasRating =
+                    (typeof ratingAvg === 'number' && Number.isFinite(ratingAvg)) ||
+                    (typeof ratingAvg === 'string' && ratingAvg.trim() !== '');
+                if (hasRating) {
+                    const avgText = typeof ratingAvg === 'number' ? ratingAvg.toFixed(1) : String(ratingAvg);
+                    const totalText =
+                        typeof ratingTotal === 'number' && Number.isFinite(ratingTotal) ? ` (${ratingTotal})` : '';
+                    ratingEl.style.display = '';
+                    ratingEl.textContent = `⭐ ${avgText}${totalText}`;
+                } else {
+                    ratingEl.style.display = 'none';
+                    ratingEl.textContent = '';
+                }
+            }
+
+            if (emailEl) emailEl.textContent = fixer?.email ? `Email: ${fixer.email}` : '';
+            if (phoneEl) phoneEl.textContent = fixer?.phone ? `Phone: ${fixer.phone}` : '';
+
+            const addr = formatFixerAddress(fixer?.address);
+            if (addrEl) addrEl.textContent = addr ? `Address: ${addr}` : '';
+        }
+
+        async function loadFixerProfileSummary() {
+            setFixerSummaryState({ loading: true, error: '' });
+
+            try {
+                if (!window.apiService && typeof FIXGHARApiService === 'function') {
+                    window.apiService = new FIXGHARApiService();
+                }
+                const svc = window.apiService;
+                if (!svc) throw new Error('API service not available');
+
+                // Prefer fixer profile endpoint; fallback to /auth/me if needed
+                let res;
+                if (typeof svc.getFixerProfile === 'function') {
+                    res = await svc.getFixerProfile();
+                } else if (typeof svc.getCurrentUser === 'function') {
+                    res = await svc.getCurrentUser();
+                } else {
+                    throw new Error('No profile API method available');
+                }
+
+                const fixer = res?.data?.data || res?.data?.user || res?.data;
+                if (!fixer) throw new Error('Invalid profile response');
+
+                renderFixerSummary(fixer);
+                setFixerSummaryState({ loading: false, error: '' });
+                setFixerSummaryVisible(true);
+
+                if (window.stateService && typeof window.stateService.updateUserProfile === 'function') {
+                    window.stateService.updateUserProfile(fixer);
+                }
+            } catch (err) {
+                const msg = err?.message || 'Failed to load your profile.';
+                console.error('❌ fixer profile fetch failed:', err);
+                setFixerSummaryState({ loading: false, error: msg });
+
+                const low = String(msg).toLowerCase();
+                if (low.includes('not authorized') || low.includes('unauthorized') || low.includes('401')) {
+                    if (window.apiService && typeof window.apiService.clearAuth === 'function') {
+                        window.apiService.clearAuth();
+                    }
+                    if (window.stateService && typeof window.stateService.clearAuthenticatedUser === 'function') {
+                        window.stateService.clearAuthenticatedUser();
+                    }
+                    window.location.replace('../index.html');
+                }
+            }
+        }
         
         // Function to load analytics data
         function loadAnalyticsData() {

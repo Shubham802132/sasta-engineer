@@ -1318,6 +1318,8 @@
                     email: document.getElementById('loginEmail').value,
                     password: document.getElementById('loginPassword').value
                 };
+                const rememberMe = !!document.getElementById('rememberMe')?.checked;
+                const persist = rememberMe ? 'local' : 'session';
 
                 console.log('🚀 Sending login data:', formData);
 
@@ -1354,24 +1356,28 @@
                 if (response.success) {
                     console.log('✅ Login successful:', response);
                     
-                    // Store user data
-                    if (response.data && response.data.token) {
-                        localStorage.setItem('fixghar_token', response.data.token);
-                        console.log('🔑 Token stored in localStorage:', response.data.token.substring(0, 20) + '...');
+                    // Persist auth session in a single consistent place
+                    const token = response?.data?.token;
+                    const userData =
+                        selectedRole === 'fixer' ? response?.data?.fixer : response?.data?.user;
+
+                    if (!token || !userData) {
+                        throw new Error('Login response missing token or user data');
                     }
-                    
-                    // Store user/fixer data based on role
-                    if (selectedRole === 'fixer' && response.data && response.data.fixer) {
-                        localStorage.setItem('fixghar_user', JSON.stringify(response.data.fixer));
-                        localStorage.setItem('userName', response.data.fixer.name || 'Fixer');
-                        localStorage.setItem('userType', 'fixer');
-                        console.log('🔧 Fixer data stored:', response.data.fixer);
-                    } else if (selectedRole === 'user' && response.data && response.data.user) {
-                        localStorage.setItem('fixghar_user', JSON.stringify(response.data.user));
-                        localStorage.setItem('userName', response.data.user.name || 'User');
-                        localStorage.setItem('userType', 'user');
-                        console.log('👤 User data stored:', response.data.user);
+
+                    // Prefer stateService if available (handles localStorage/sessionStorage + migrations)
+                    if (window.stateService && typeof window.stateService.setAuthenticatedUser === 'function') {
+                        window.stateService.setAuthenticatedUser(userData, token, selectedRole, persist);
+                    } else {
+                        const storage = persist === 'session' ? sessionStorage : localStorage;
+                        storage.setItem('fixghar_persist', persist);
+                        storage.setItem('fixghar_token', token);
+                        storage.setItem('fixghar_user_data', JSON.stringify(userData));
+                        storage.setItem('fixghar_user_type', selectedRole);
                     }
+
+                    // Backward-compat display name key (optional)
+                    localStorage.setItem('userName', userData.name || (selectedRole === 'fixer' ? 'Fixer' : 'User'));
                     
                     // Show success message
                     const roleText = selectedRole === 'fixer' ? 'Fixer' : 'User';

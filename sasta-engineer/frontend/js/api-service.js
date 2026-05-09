@@ -5,9 +5,13 @@ class FIXGHARApiService {
     constructor() {
         this.baseURL = window.FIXGHAR_CONFIG?.api?.baseURL || 'https://fixghar.onrender.com/api';
         this.timeout = window.FIXGHAR_CONFIG?.api?.timeout || 60000; // Increased to 60 seconds
-        this.token = localStorage.getItem('fixghar_token'); // Will be refreshed for each request
+        this.token = this.getStoredToken(); // Will be refreshed for each request
 
         this.setupInterceptors();
+    }
+
+    getStoredToken() {
+        return localStorage.getItem('fixghar_token') || sessionStorage.getItem('fixghar_token');
     }
 
     // Setup request/response interceptors
@@ -15,7 +19,8 @@ class FIXGHARApiService {
         // Add token to all requests if available
         this.addRequestInterceptor = (config) => {
             // Get fresh token from localStorage for each request
-            const currentToken = localStorage.getItem('fixghar_token');
+            const currentToken =
+                localStorage.getItem('fixghar_token') || sessionStorage.getItem('fixghar_token');
             if (currentToken) {
                 config.headers = config.headers || {};
                 config.headers.Authorization = `Bearer ${currentToken}`;
@@ -311,7 +316,12 @@ class FIXGHARApiService {
     // Utility Methods
     setToken(token) {
         this.token = token;
-        localStorage.setItem('fixghar_token', token);
+        // Respect chosen persistence if set; otherwise default to localStorage
+        const persist =
+            localStorage.getItem('fixghar_persist') || sessionStorage.getItem('fixghar_persist') || 'local';
+        const storage = persist === 'session' ? sessionStorage : localStorage;
+        storage.setItem('fixghar_persist', persist);
+        storage.setItem('fixghar_token', token);
     }
 
     getToken() {
@@ -320,13 +330,24 @@ class FIXGHARApiService {
 
     clearAuth() {
         this.token = null;
+        // Clear both storages (and legacy keys)
         localStorage.removeItem('fixghar_token');
         localStorage.removeItem('fixghar_user_type');
         localStorage.removeItem('fixghar_user_data');
+        localStorage.removeItem('fixghar_persist');
+        localStorage.removeItem('fixghar_user');
+        localStorage.removeItem('userType');
+
+        sessionStorage.removeItem('fixghar_token');
+        sessionStorage.removeItem('fixghar_user_type');
+        sessionStorage.removeItem('fixghar_user_data');
+        sessionStorage.removeItem('fixghar_persist');
+        sessionStorage.removeItem('fixghar_user');
+        sessionStorage.removeItem('userType');
     }
 
     isAuthenticated() {
-        return !!this.token;
+        return !!(this.token || this.getStoredToken());
     }
 
     getUserType() {
