@@ -53,6 +53,7 @@ const {
     validateRequest,
     corsOptions 
 } = require('./middleware/security');
+const smsService = require('./utils/smsService');
 
 
 const app = express();
@@ -92,6 +93,41 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+
+// Debug: test MSG91/Twilio SMS sending from server (no secrets returned)
+// GET /api/test-msg91?to=919876543210
+app.get('/api/test-msg91', async (req, res) => {
+    try {
+        const to = req.query.to || process.env.SMS_TEST_TO;
+        if (!to) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing `to` query param. Example: /api/test-msg91?to=919876543210'
+            });
+        }
+
+        const otp = smsService.generateOTP();
+        console.log('🧪 [test-msg91] to:', to, 'otp:', otp);
+        const result = await smsService.sendOTP(String(to), otp, 'user');
+        return res.status(result.success ? 200 : 400).json({
+            success: result.success,
+            message: result.success ? 'OTP send attempted. Check provider logs.' : 'OTP not sent',
+            provider: result.provider,
+            code: result.code,
+            detail: result.message,
+            phoneE164: result.phoneE164,
+            requestId: result.requestId,
+            messageId: result.messageId
+        });
+    } catch (e) {
+        console.error('❌ [test-msg91] error:', e?.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error while testing MSG91',
+            error: process.env.NODE_ENV === 'production' ? undefined : e?.message
+        });
+    }
+});
 
 // Public fixer routes (no authentication required)
 app.get('/api/fixers/service-requests', async (req, res) => {
