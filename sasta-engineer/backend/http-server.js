@@ -56,6 +56,10 @@ const {
 
 
 const app = express();
+// Required for Render / reverse-proxy deployments so express-rate-limit can
+// safely use X-Forwarded-For without throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+// (trust first proxy hop; Render sits in front of the Node app)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 // Enhanced Security middleware
