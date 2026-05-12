@@ -63,7 +63,9 @@ function logSmsEnvOnce() {
     const token = process.env.TWILIO_AUTH_TOKEN;
     const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM;
     const msg91 = process.env.MSG91_AUTH_KEY;
+    const env = process.env.NODE_ENV || 'development';
 
+    console.log('📲 [SMS env] NODE_ENV:', env);
     console.log('📲 [SMS env] TWILIO_ACCOUNT_SID:', sid ? maskSecret(sid, 6) : '[not set]');
     console.log('📲 [SMS env] TWILIO_AUTH_TOKEN:', token ? '[set]' : '[not set]');
     console.log(
@@ -91,6 +93,42 @@ class SMSService {
 
     generateOTP() {
         return crypto.randomInt(100000, 999999).toString();
+    }
+
+    getProviderStatus() {
+        const sid = process.env.TWILIO_ACCOUNT_SID;
+        const token = process.env.TWILIO_AUTH_TOKEN;
+        const fromNumber =
+            process.env.TWILIO_PHONE_NUMBER ||
+            process.env.TWILIO_FROM ||
+            process.env.TWILIO_PHONE;
+        const msg91Key = process.env.MSG91_AUTH_KEY;
+
+        const twilioConfigured = !!(sid && token && fromNumber);
+        const msg91Configured = !isPlaceholderAuthKey(msg91Key);
+        const smsTestMode = process.env.SMS_TEST_MODE === 'true';
+
+        const missing = [];
+        if (!sid) missing.push('TWILIO_ACCOUNT_SID');
+        if (!token) missing.push('TWILIO_AUTH_TOKEN');
+        if (!fromNumber) missing.push('TWILIO_PHONE_NUMBER');
+        if (isPlaceholderAuthKey(msg91Key)) missing.push('MSG91_AUTH_KEY');
+        if (process.env.SMS_TEST_MODE !== 'true' && process.env.SMS_TEST_MODE !== 'false') {
+            missing.push('SMS_TEST_MODE');
+        }
+
+        let provider = null;
+        if (smsTestMode) provider = 'test';
+        else if (twilioConfigured) provider = 'twilio';
+        else if (msg91Configured) provider = 'msg91';
+
+        return {
+            provider,
+            twilioConfigured,
+            msg91Configured,
+            smsTestMode,
+            missing
+        };
     }
 
     async sendViaTwilio(e164, bodyText) {
@@ -226,8 +264,9 @@ class SMSService {
      * @returns {Promise<{success:boolean, code?:string, message?:string, provider?:string, testMode?:boolean}>}
      */
     async sendOTP(phoneNumber, otp, userType = 'user') {
+        const env = process.env.NODE_ENV || 'development';
         console.log('📱 [OTP SMS] Raw phone from caller:', phoneNumber);
-        console.log('📱 [OTP SMS] OTP length:', otp ? String(otp).length : 0, 'userType:', userType);
+        console.log('📱 [OTP SMS] OTP length:', otp ? String(otp).length : 0, 'userType:', userType, 'env:', env);
 
         const norm = normalizeIndianToE164(phoneNumber);
         if (!norm.ok) {
@@ -244,9 +283,15 @@ class SMSService {
 
         const smsMessage = `Your FIXGHAR verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`;
 
-        const isProd = process.env.NODE_ENV === 'production';
-        const testMode = process.env.SMS_TEST_MODE === 'true';
-        if (testMode) {
+        const status = this.getProviderStatus();
+        console.log('🧾 [OTP SMS] Provider status:', {
+            provider: status.provider,
+            twilioConfigured: status.twilioConfigured,
+            msg91Configured: status.msg91Configured,
+            smsTestMode: status.smsTestMode
+        });
+
+        if (status.smsTestMode) {
             console.warn(
                 '🧪 [OTP SMS] SMS_TEST_MODE=true — no SMS sent to phone. Set SMS_TEST_MODE=false and configure Twilio or MSG91.'
             );
@@ -261,42 +306,23 @@ class SMSService {
             };
         }
 
-        // If SMS_TEST_MODE is off, require a real provider in production.
-        // In local/dev, allow "auto test mode" when no provider keys exist so signup isn't blocked.
-        const sid = process.env.TWILIO_ACCOUNT_SID;
-        const token = process.env.TWILIO_AUTH_TOKEN;
-        const fromNumber =
-            process.env.TWILIO_PHONE_NUMBER ||
-            process.env.TWILIO_FROM ||
-            process.env.TWILIO_PHONE;
-        const msg91Key = process.env.MSG91_AUTH_KEY;
+        if (!status.twilioConfigured && !status.msg91Configured) {
+            console.error('❌ [OTP SMS] No SMS provider configured. Missing:', status.missing.join(', ') || '[unknown]');
 
-        const twilioConfigured = !!(sid && token && fromNumber);
-        const msg91Configured = !isPlaceholderAuthKey(msg91Key);
-
-        if (!twilioConfigured && !msg91Configured) {
-            const missing = [];
-            if (!sid) missing.push('TWILIO_ACCOUNT_SID');
-            if (!token) missing.push('TWILIO_AUTH_TOKEN');
-            if (!fromNumber) missing.push('TWILIO_PHONE_NUMBER');
-            if (isPlaceholderAuthKey(msg91Key)) missing.push('MSG91_AUTH_KEY');
-
-            console.error('❌ [OTP SMS] No SMS provider configured. Missing:', missing.join(', ') || '[unknown]');
-
-            if (!isProd) {
+            if (env !== 'production') {
                 console.warn(
-                    '🧪 [OTP SMS] Dev fallback: no provider keys found; treating as test mode so local signup works.'
+                    '🧪 [OTP SMS] Dev fallback: enabling implicit test mode (no SMS sent). Set SMS_TEST_MODE=true to silence this warning.'
                 );
                 console.log('🧪 [OTP SMS] Would send to:', e164, 'OTP:', otp);
                 return {
                     success: true,
                     code: 'TEST_MODE_AUTO',
                     message:
-                        'Local test mode: SMS not sent because no provider keys are configured. Add Twilio/MSG91 keys and set SMS_TEST_MODE=false for real delivery.',
+                        'Local dev fallback: SMS not sent because no provider keys are configured. Set SMS_TEST_MODE=true for local testing or configure Twilio/MSG91 for real delivery.',
                     provider: 'test',
                     testMode: true,
                     phoneE164: e164,
-                    missingEnv: missing
+                    missingEnv: status.missing
                 };
             }
 
@@ -304,11 +330,14 @@ class SMSService {
                 success: false,
                 code: 'SMS_NOT_CONFIGURED',
                 message:
-                    `SMS could not be sent: missing ${missing.join(', ')}. Configure Twilio (TWILIO_*) or MSG91 (MSG91_AUTH_KEY), set SMS_TEST_MODE=false, and restart the server.`,
+                    `SMS could not be sent: missing ${status.missing.join(', ')}. Configure Twilio (TWILIO_*) or MSG91 (MSG91_AUTH_KEY), set SMS_TEST_MODE=false, and restart the server.`,
                 phoneE164: e164,
-                missingEnv: missing
+                missingEnv: status.missing
             };
         }
+
+        if (status.twilioConfigured) console.log('📡 [OTP SMS] Provider selected: twilio');
+        else if (status.msg91Configured) console.log('📡 [OTP SMS] Provider selected: msg91');
 
         // 1) Twilio
         try {
@@ -364,6 +393,7 @@ class SMSService {
             }
         }
 
+        console.error('❌ [OTP SMS] All configured providers failed.');
         return {
             success: false,
             code: 'SMS_NOT_CONFIGURED',

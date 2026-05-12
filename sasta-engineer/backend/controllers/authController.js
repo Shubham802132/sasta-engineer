@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const Fixer = require('../models/fixer');
 const OTP = require('../models/otp');
+const PendingRegistration = require('../models/pendingRegistration');
 const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const smsService = require('../utils/smsService');
@@ -229,9 +230,28 @@ const registerUser = async (req, res) => {
             console.log('📝 registerUser generated username:', finalUsername);
         }
 
-        // OTP must be deliverable before creating the user account
+        // Create/replace pending registration so account is created only after OTP verification
+        await PendingRegistration.deleteMany({
+            userType: 'user',
+            $or: [{ email: normalized.email }, { phone: phoneForSave }]
+        });
+
+        const pending = await PendingRegistration.create({
+            userType: 'user',
+            name,
+            username: finalUsername,
+            email: normalized.email || email,
+            phone: phoneForSave,
+            password,
+            address
+        });
+
         const otpCode = smsService.generateOTP();
-        console.log('📱 [OTP] Pre-generated OTP (server-side):', process.env.NODE_ENV === 'production' ? '[generated]' : otpCode);
+        console.log(
+            '📱 [OTP] OTP generated for pending user:',
+            process.env.NODE_ENV === 'production' ? '[generated]' : otpCode
+        );
+
         const smsResult = await smsService.sendOTP(phoneForSave, otpCode, 'user');
         const otpDelivery = {
             status: smsResult.success ? 'sent' : 'failed',
@@ -240,129 +260,40 @@ const registerUser = async (req, res) => {
             detail: smsResult.message || null,
             testMode: !!smsResult.testMode
         };
-        if (smsResult.success && smsResult.testMode) {
-            otpDelivery.status = 'test_mode';
-        }
+        if (smsResult.success && smsResult.testMode) otpDelivery.status = 'test_mode';
+
         if (!smsResult.success) {
-            console.error('❌ [OTP] SMS send failed (account not created):', smsResult.code, smsResult.message);
+            await PendingRegistration.deleteOne({ _id: pending._id });
             return res.status(502).json({
                 success: false,
-                message:
-                    smsResult.message ||
-                    'SMS provider error. Please try again later.',
+                message: smsResult.message || 'SMS provider error.',
                 code: smsResult.code || 'SMS_PROVIDER_ERROR',
                 otpDelivery
             });
         }
 
-        console.log('📝 registerUser User.create (safe)', {
-            name,
-            username: finalUsername,
-            email: normalized.email,
-            phone: phoneForSave,
-            hasPassword: typeof password === 'string' && password.length > 0,
-            addressPresent: !!address
-        });
+        const otpRecord = await OTP.createOTPWithCode(
+            phoneForSave,
+            otpCode,
+            'phone_verification',
+            'user',
+            pending._id
+        );
 
-        let user;
-        try {
-            user = await User.create({
-                name,
-                username: finalUsername,
-                email: normalized.email || email,
-                phone: phoneForSave,
-                password,
-                address
-            });
-        } catch (saveErr) {
-            console.error('❌ User.create / save failed:', saveErr?.message);
-            console.error(saveErr?.stack);
-            throw saveErr;
+        let registerMessage = 'OTP sent successfully — verify to create your account.';
+        if (otpDelivery.status === 'test_mode') {
+            registerMessage = 'OTP generated (test mode). Verify OTP to create your account.';
         }
 
-        // Persist OTP after successful gateway acceptance (or test mode)
-        let otp;
-        try {
-            otp = await OTP.createOTPWithCode(
-                phoneForSave,
-                otpCode,
-                'phone_verification',
-                'user',
-                user._id
-            );
-            console.log('✅ [OTP] Stored OTP record after SMS accepted. phone:', phoneForSave);
-        } catch (otpErr) {
-            console.error('❌ [OTP] Could not store OTP record; rolling back user:', otpErr?.message);
-            try {
-                await User.deleteOne({ _id: user._id });
-            } catch (rbErr) {
-                console.error('❌ [OTP] rollback delete user failed:', rbErr?.message);
-            }
-            return res.status(500).json({
-                success: false,
-                message: 'Could not finalize registration. Please try again.',
-                code: 'OTP_PERSIST_FAILED'
-            });
-        }
-
-        // Generate token
-        let token;
-        try {
-            token = user.getSignedJwtToken();
-        } catch (jwtErr) {
-            console.error('❌ JWT sign failed after registration:', jwtErr?.message);
-            console.error(jwtErr?.stack);
-            throw jwtErr;
-        }
-
-        let registerMessage = 'User registered successfully.';
-        if (otpDelivery.status === 'sent') {
-            registerMessage +=
-                ' OTP sent successfully — check your phone for the verification code.';
-        } else if (otpDelivery.status === 'test_mode') {
-            registerMessage +=
-                ' OTP SMS is in test mode (SMS_TEST_MODE=true); SMS was not sent to your phone.';
-        } else if (otpDelivery.code === 'SMS_PROVIDER_ERROR' || otpDelivery.code === 'SMS_NOT_CONFIGURED') {
-            registerMessage += ` OTP could not be sent (${otpDelivery.detail || 'SMS provider error'}). Configure Twilio or MSG91 and set SMS_TEST_MODE=false.`;
-        } else {
-            registerMessage += ` OTP SMS issue: ${otpDelivery.detail || 'Unknown error'}.`;
-        }
-
-        const successBody = {
+        return res.status(201).json({
             success: true,
             message: registerMessage,
             data: {
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    username: user.username,
-                    phone: user.phone,
-                    address: user.address,
-                    isPhoneVerified: user.isPhoneVerified
-                },
-                token,
-                otp: otp.otp, // Dev/testing — same OTP that was sent to gateway
+                phone: phoneForSave,
+                otp: otpRecord.otp,
                 otpDelivery
             }
-        };
-
-        console.log('✅ registerUser saved user:', {
-            id: String(user._id),
-            email: user.email,
-            phone: user.phone,
-            username: user.username
         });
-        console.log(
-            '📤 registerUser final response (201):',
-            JSON.stringify({
-                success: successBody.success,
-                message: successBody.message,
-                userEmail: successBody.data.user.email
-            })
-        );
-
-        res.status(201).json(successBody);
 
     } catch (error) {
         console.error('User registration error.message:', error?.message);
@@ -502,32 +433,14 @@ const registerFixer = async (req, res) => {
             });
         }
 
-        // Create fixer
-        // OTP must be deliverable before creating the fixer account
-        const otpCode = smsService.generateOTP();
-        console.log('📱 [OTP] Pre-generated OTP (fixer):', process.env.NODE_ENV === 'production' ? '[generated]' : otpCode);
-        const smsResult = await smsService.sendOTP(phoneForSave, otpCode, 'fixer');
-        const otpDelivery = {
-            status: smsResult.success ? 'sent' : 'failed',
-            provider: smsResult.provider || null,
-            code: smsResult.code || null,
-            detail: smsResult.message || null,
-            testMode: !!smsResult.testMode
-        };
-        if (smsResult.success && smsResult.testMode) otpDelivery.status = 'test_mode';
-        if (!smsResult.success) {
-            console.error('❌ [OTP] Fixer SMS send failed (account not created):', smsResult.code, smsResult.message);
-            return res.status(502).json({
-                success: false,
-                message:
-                    smsResult.message ||
-                    'SMS provider error. Please try again later.',
-                code: smsResult.code || 'SMS_PROVIDER_ERROR',
-                otpDelivery
-            });
-        }
+        // Create/replace pending fixer registration so account is created only after OTP verification
+        await PendingRegistration.deleteMany({
+            userType: 'fixer',
+            $or: [{ email }, { phone: phoneForSave }]
+        });
 
-        const fixer = await Fixer.create({
+        const pending = await PendingRegistration.create({
+            userType: 'fixer',
             name,
             username,
             email,
@@ -537,66 +450,51 @@ const registerFixer = async (req, res) => {
             address
         });
 
-        // Persist OTP after successful gateway acceptance (or test mode)
-        let otp;
-        try {
-            otp = await OTP.createOTPWithCode(
-                phoneForSave,
-                otpCode,
-                'phone_verification',
-                'fixer',
-                fixer._id
-            );
-            console.log('✅ [OTP] Stored fixer OTP record after SMS accepted. phone:', phoneForSave);
-        } catch (otpErr) {
-            console.error('❌ [OTP] Could not store fixer OTP record; rolling back fixer:', otpErr?.message);
-            try {
-                await Fixer.deleteOne({ _id: fixer._id });
-            } catch (rbErr) {
-                console.error('❌ [OTP] rollback delete fixer failed:', rbErr?.message);
-            }
-            return res.status(500).json({
+        const otpCode = smsService.generateOTP();
+        console.log(
+            '📱 [OTP] OTP generated for pending fixer:',
+            process.env.NODE_ENV === 'production' ? '[generated]' : otpCode
+        );
+
+        const smsResult = await smsService.sendOTP(phoneForSave, otpCode, 'fixer');
+        const otpDelivery = {
+            status: smsResult.success ? 'sent' : 'failed',
+            provider: smsResult.provider || null,
+            code: smsResult.code || null,
+            detail: smsResult.message || null,
+            testMode: !!smsResult.testMode
+        };
+        if (smsResult.success && smsResult.testMode) otpDelivery.status = 'test_mode';
+
+        if (!smsResult.success) {
+            await PendingRegistration.deleteOne({ _id: pending._id });
+            return res.status(502).json({
                 success: false,
-                message: 'Could not finalize registration. Please try again.',
-                code: 'OTP_PERSIST_FAILED'
+                message: smsResult.message || 'SMS provider error.',
+                code: smsResult.code || 'SMS_PROVIDER_ERROR',
+                otpDelivery
             });
         }
 
-        // Generate token
-        const token = fixer.getSignedJwtToken();
+        const otpRecord = await OTP.createOTPWithCode(
+            phoneForSave,
+            otpCode,
+            'phone_verification',
+            'fixer',
+            pending._id
+        );
 
-        let fixerMsg = 'Fixer registered successfully.';
-        if (otpDelivery.status === 'sent') {
-            fixerMsg +=
-                ' OTP sent successfully — check your phone for the verification code.';
-        } else if (otpDelivery.status === 'test_mode') {
-            fixerMsg +=
-                ' OTP SMS is in test mode (SMS_TEST_MODE=true); SMS was not sent to your phone.';
-        } else if (
-            otpDelivery.code === 'SMS_PROVIDER_ERROR' ||
-            otpDelivery.code === 'SMS_NOT_CONFIGURED'
-        ) {
-            fixerMsg += ` OTP could not be sent (${otpDelivery.detail || 'SMS provider error'}). Configure Twilio or MSG91 and set SMS_TEST_MODE=false.`;
-        } else {
-            fixerMsg += ` OTP SMS issue: ${otpDelivery.detail || 'Unknown error'}.`;
+        let fixerMsg = 'OTP sent successfully — verify to create your account.';
+        if (otpDelivery.status === 'test_mode') {
+            fixerMsg = 'OTP generated (test mode). Verify OTP to create your account.';
         }
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: fixerMsg,
             data: {
-                fixer: {
-                    id: fixer._id,
-                    name: fixer.name,
-                    email: fixer.email,
-                    username: fixer.username,
-                    phone: fixer.phone,
-                    address: fixer.address,
-                    serviceCategory: fixer.serviceCategory,
-                    isPhoneVerified: fixer.isPhoneVerified
-                },
-                token,
-                otp: otp.otp,
+                phone: phoneForSave,
+                otp: otpRecord.otp,
                 otpDelivery
             }
         });
@@ -882,20 +780,79 @@ const verifyOTP = async (req, res) => {
         // Mark OTP as used
         await otpRecord.markAsUsed();
 
-        // Update user/fixer phone verification status
+        // Update user/fixer phone verification status OR create account from pending registration.
         if (userType === 'user') {
-            await User.findByIdAndUpdate(otpRecord.userId, {
-                isPhoneVerified: true
-            });
+            const existing = await User.findById(otpRecord.userId).select('_id');
+            if (existing) {
+                await User.findByIdAndUpdate(otpRecord.userId, { isPhoneVerified: true });
+            } else {
+                const pending = await PendingRegistration.findById(otpRecord.userId).select('+password');
+                if (!pending || pending.userType !== 'user') {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Pending registration expired. Please sign up again.',
+                        code: 'PENDING_EXPIRED'
+                    });
+                }
+
+                const user = await User.create({
+                    name: pending.name,
+                    username: pending.username,
+                    email: pending.email,
+                    phone: pending.phone,
+                    password: pending.password,
+                    address: pending.address,
+                    isPhoneVerified: true
+                });
+
+                await PendingRegistration.deleteOne({ _id: pending._id });
+                await OTP.deleteMany({
+                    userId: pending._id,
+                    userType: 'user',
+                    type: 'phone_verification'
+                });
+
+                console.log('✅ [OTP] User created after OTP verification:', String(user._id));
+            }
         } else if (userType === 'fixer') {
-            await Fixer.findByIdAndUpdate(otpRecord.userId, {
-                isPhoneVerified: true
-            });
+            const existing = await Fixer.findById(otpRecord.userId).select('_id');
+            if (existing) {
+                await Fixer.findByIdAndUpdate(otpRecord.userId, { isPhoneVerified: true });
+            } else {
+                const pending = await PendingRegistration.findById(otpRecord.userId).select('+password');
+                if (!pending || pending.userType !== 'fixer') {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Pending registration expired. Please sign up again.',
+                        code: 'PENDING_EXPIRED'
+                    });
+                }
+
+                const fixer = await Fixer.create({
+                    name: pending.name,
+                    username: pending.username,
+                    email: pending.email,
+                    phone: pending.phone,
+                    password: pending.password,
+                    serviceCategory: pending.serviceCategory,
+                    address: pending.address,
+                    isPhoneVerified: true
+                });
+
+                await PendingRegistration.deleteOne({ _id: pending._id });
+                await OTP.deleteMany({
+                    userId: pending._id,
+                    userType: 'fixer',
+                    type: 'phone_verification'
+                });
+
+                console.log('✅ [OTP] Fixer created after OTP verification:', String(fixer._id));
+            }
         }
 
         res.status(200).json({
             success: true,
-            message: 'Phone verified successfully'
+            message: 'Phone verified successfully. You can now login.'
         });
 
     } catch (error) {
@@ -941,16 +898,24 @@ const resendOTP = async (req, res) => {
             user = await Fixer.findOne({ $or: phoneOr });
         }
 
+        // If not found, try pending registrations (signup not yet verified)
+        let pending = null;
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
+            pending = await PendingRegistration.findOne({
+                userType,
+                $or: [{ phone: phoneNorm.e164 }, { phone: phoneNorm.digits10 }]
+            }).select('_id');
+            if (!pending) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
         }
 
         // Delete existing OTPs for this user
         await OTP.deleteMany({
-            userId: user._id,
+            userId: user ? user._id : pending._id,
             userType,
             type: 'phone_verification'
         });
@@ -960,7 +925,7 @@ const resendOTP = async (req, res) => {
             phoneNorm.e164,
             'phone_verification',
             userType,
-            user._id
+            user ? user._id : pending._id
         );
 
         const smsResult = await smsService.sendOTP(phoneNorm.e164, otp.otp, userType);

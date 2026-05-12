@@ -1155,6 +1155,12 @@
         // Resend OTP Handler
         async function resendOTP(userType, phone) {
             try {
+                const resendBtn = document.querySelector('#otpVerificationForm button[onclick*="resendOTP"]');
+                if (resendBtn) {
+                    resendBtn.disabled = true;
+                    resendBtn.dataset._oldText = resendBtn.textContent;
+                    resendBtn.textContent = 'Sending...';
+                }
                 console.log('📱 [resend OTP] phone sent to backend:', phone);
                 const apiService = new FIXGHARApiService();
                 const response = await apiService.resendOTP({
@@ -1184,6 +1190,15 @@
                 } else {
                     showModernAlert('Resend OTP error', error.message, 'error');
                 }
+            } finally {
+                const resendBtn = document.querySelector('#otpVerificationForm button[onclick*="resendOTP"]');
+                if (resendBtn) {
+                    // throttle resends to avoid spamming providers
+                    setTimeout(() => {
+                        resendBtn.disabled = false;
+                        resendBtn.textContent = resendBtn.dataset._oldText || 'Resend OTP';
+                    }, 30000);
+                }
             }
         }
         
@@ -1192,6 +1207,12 @@
             event.preventDefault();
             
             try {
+                const btn = document.querySelector('#userSignupForm button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.dataset._oldText = btn.textContent;
+                    btn.textContent = 'Creating account...';
+                }
                 // Get form data
                 const usernameRaw = document.getElementById('userUsername').value;
                 const formData = {
@@ -1294,6 +1315,12 @@
                 } else {
                     showModernAlert('Registration error', error.message, 'error');
                 }
+            } finally {
+                const btn = document.querySelector('#userSignupForm button[type="submit"]');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = btn.dataset._oldText || 'Sign Up';
+                }
             }
         }
         
@@ -1301,6 +1328,12 @@
             event.preventDefault();
             
             try {
+                const btn = document.querySelector('#fixerSignupForm button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.dataset._oldText = btn.textContent;
+                    btn.textContent = 'Creating account...';
+                }
                 // Get form data
                 const usernameRaw = document.getElementById('fixerUsername').value;
                 const formData = {
@@ -1383,6 +1416,12 @@
                     showModernAlert('SMS provider error', error.message, 'error');
                 } else {
                     showModernAlert('Fixer registration error', error.message, 'error');
+                }
+            } finally {
+                const btn = document.querySelector('#fixerSignupForm button[type="submit"]');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = btn.dataset._oldText || 'Sign Up';
                 }
             }
         }
