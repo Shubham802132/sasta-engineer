@@ -244,6 +244,7 @@ class SMSService {
 
         const smsMessage = `Your FIXGHAR verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`;
 
+        const isProd = process.env.NODE_ENV === 'production';
         const testMode = process.env.SMS_TEST_MODE === 'true';
         if (testMode) {
             console.warn(
@@ -257,6 +258,55 @@ class SMSService {
                 provider: 'test',
                 testMode: true,
                 phoneE164: e164
+            };
+        }
+
+        // If SMS_TEST_MODE is off, require a real provider in production.
+        // In local/dev, allow "auto test mode" when no provider keys exist so signup isn't blocked.
+        const sid = process.env.TWILIO_ACCOUNT_SID;
+        const token = process.env.TWILIO_AUTH_TOKEN;
+        const fromNumber =
+            process.env.TWILIO_PHONE_NUMBER ||
+            process.env.TWILIO_FROM ||
+            process.env.TWILIO_PHONE;
+        const msg91Key = process.env.MSG91_AUTH_KEY;
+
+        const twilioConfigured = !!(sid && token && fromNumber);
+        const msg91Configured = !isPlaceholderAuthKey(msg91Key);
+
+        if (!twilioConfigured && !msg91Configured) {
+            const missing = [];
+            if (!sid) missing.push('TWILIO_ACCOUNT_SID');
+            if (!token) missing.push('TWILIO_AUTH_TOKEN');
+            if (!fromNumber) missing.push('TWILIO_PHONE_NUMBER');
+            if (isPlaceholderAuthKey(msg91Key)) missing.push('MSG91_AUTH_KEY');
+
+            console.error('❌ [OTP SMS] No SMS provider configured. Missing:', missing.join(', ') || '[unknown]');
+
+            if (!isProd) {
+                console.warn(
+                    '🧪 [OTP SMS] Dev fallback: no provider keys found; treating as test mode so local signup works.'
+                );
+                console.log('🧪 [OTP SMS] Would send to:', e164, 'OTP:', otp);
+                return {
+                    success: true,
+                    code: 'TEST_MODE_AUTO',
+                    message:
+                        'Local test mode: SMS not sent because no provider keys are configured. Add Twilio/MSG91 keys and set SMS_TEST_MODE=false for real delivery.',
+                    provider: 'test',
+                    testMode: true,
+                    phoneE164: e164,
+                    missingEnv: missing
+                };
+            }
+
+            return {
+                success: false,
+                code: 'SMS_NOT_CONFIGURED',
+                message:
+                    `SMS could not be sent: missing ${missing.join(', ')}. Configure Twilio (TWILIO_*) or MSG91 (MSG91_AUTH_KEY), set SMS_TEST_MODE=false, and restart the server.`,
+                phoneE164: e164,
+                missingEnv: missing
             };
         }
 
