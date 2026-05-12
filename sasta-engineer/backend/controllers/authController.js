@@ -72,10 +72,19 @@ const registerUser = async (req, res) => {
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            const list = errors.array({ onlyFirstError: true }) || [];
+            const first = list[0];
+            // Detailed logs to pinpoint which field fails in production.
+            console.error('❌ registerUser validation failed:', JSON.stringify(list, null, 2));
+            const bodyForLog = { ...req.body };
+            if (bodyForLog.password) bodyForLog.password = '[REDACTED]';
+            console.error('❌ registerUser invalid req.body (password redacted):', JSON.stringify(bodyForLog));
             return res.status(400).json({
                 success: false,
-                message: 'Validation failed',
-                errors: errors.array()
+                message: first?.msg || 'Validation failed',
+                field: first?.path,
+                code: 'VALIDATION_ERROR',
+                errors: list
             });
         }
 
@@ -417,9 +426,18 @@ const registerFixer = async (req, res) => {
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            const list = errors.array({ onlyFirstError: true }) || [];
+            const first = list[0];
+            console.error('❌ registerFixer validation failed:', JSON.stringify(list, null, 2));
+            const bodyForLog = { ...req.body };
+            if (bodyForLog.password) bodyForLog.password = '[REDACTED]';
+            console.error('❌ registerFixer invalid req.body (password redacted):', JSON.stringify(bodyForLog));
             return res.status(400).json({
                 success: false,
-                errors: errors.array()
+                message: first?.msg || 'Validation failed',
+                field: first?.path,
+                code: 'VALIDATION_ERROR',
+                errors: list
             });
         }
 

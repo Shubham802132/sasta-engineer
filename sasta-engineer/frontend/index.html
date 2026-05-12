@@ -1286,6 +1286,9 @@
                 console.error('❌ Registration error:', error);
                 if (error.code === 'INVALID_PHONE') {
                     showModernAlert('Invalid phone number', error.message, 'error');
+                } else if (error.code === 'VALIDATION_ERROR') {
+                    const field = error.field ? ` (${error.field})` : '';
+                    showModernAlert('Validation failed', `${error.message}${field}`, 'error');
                 } else {
                     showModernAlert('Registration error', error.message, 'error');
                 }
@@ -1371,6 +1374,9 @@
                 console.error('❌ Fixer registration error:', error);
                 if (error.code === 'INVALID_PHONE') {
                     showModernAlert('Invalid phone number', error.message, 'error');
+                } else if (error.code === 'VALIDATION_ERROR') {
+                    const field = error.field ? ` (${error.field})` : '';
+                    showModernAlert('Validation failed', `${error.message}${field}`, 'error');
                 } else {
                     showModernAlert('Fixer registration error', error.message, 'error');
                 }
