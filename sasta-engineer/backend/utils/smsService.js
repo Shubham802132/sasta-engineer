@@ -206,12 +206,20 @@ class SMSService {
             return { attempted: false, reason: 'MSG91_AUTH_KEY not configured or is placeholder' };
         }
 
+        const templateId = process.env.MSG91_TEMPLATE_ID;
+        if (!templateId) {
+            console.warn(
+                '⚠️ [MSG91] MSG91_TEMPLATE_ID is not set. Many MSG91 India accounts require a DLT-mapped template to deliver OTP.'
+            );
+        }
+
         const payload = {
             authkey: authKey,
+            // MSG91 expects countrycode + mobile without "+" (India: 91XXXXXXXXXX)
             mobile: mobile10,
             otp,
             otp_expiry: 10,
-            template_id: process.env.MSG91_TEMPLATE_ID || undefined
+            template_id: templateId || undefined
         };
 
         // MSG91 accepts optional message / sender depending on account — keep minimal OTP flow
@@ -235,12 +243,21 @@ class SMSService {
         console.log('📥 [MSG91] Body:', JSON.stringify(response.data || {}, null, 2));
 
         const data = response.data || {};
-        const ok =
-            response.status >= 200 &&
-            response.status < 300 &&
-            (data.type === 'success' || data.message === 'OTP generated successfully.' || data.request_id);
+        const httpOk = response.status >= 200 && response.status < 300;
+        const hasReqId = !!data.request_id;
+        const typeOk = String(data.type || '').toLowerCase() === 'success';
+        const msgOk =
+            typeof data.message === 'string' &&
+            data.message.toLowerCase().includes('otp') &&
+            data.message.toLowerCase().includes('generated');
+        const ok = httpOk && (typeOk || msgOk) && (hasReqId || msgOk);
 
         if (ok) {
+            if (!hasReqId) {
+                console.warn(
+                    '⚠️ [MSG91] Success response without request_id. Delivery may still fail if template/DLT is not configured.'
+                );
+            }
             return {
                 ok: true,
                 provider: 'msg91',
@@ -365,8 +382,10 @@ class SMSService {
 
         // 2) MSG91 (10-digit mobile without country code)
         try {
-            const mobile10 = norm.digits10 || e164.replace(/^\+91/, '');
-            const m = await this.sendViaMsg91(mobile10, otp, smsMessage);
+            const digits10 = norm.digits10 || e164.replace(/^\+91/, '');
+            const mobile91 = `91${digits10}`; // required: 91XXXXXXXXXX (no '+')
+            console.log('📤 [MSG91] Mobile formatted (no +):', mobile91);
+            const m = await this.sendViaMsg91(mobile91, otp, smsMessage);
             if (m.attempted === false) {
                 console.log('ℹ️ [OTP SMS] MSG91 skipped:', m.reason);
             } else if (m.ok) {
