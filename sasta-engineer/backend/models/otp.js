@@ -99,6 +99,19 @@ otpSchema.statics.createOTP = function(phone, type, userType, userId) {
     });
 };
 
+// Static method to create OTP with a pre-generated code (used when SMS must succeed before account creation)
+otpSchema.statics.createOTPWithCode = function(phone, otp, type, userType, userId) {
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    return this.create({
+        phone,
+        otp,
+        type,
+        userType,
+        userId,
+        expiresAt
+    });
+};
+
 // Static method to find valid OTP
 otpSchema.statics.findValidOTP = function(phone, otp, type) {
     return this.findOne({
