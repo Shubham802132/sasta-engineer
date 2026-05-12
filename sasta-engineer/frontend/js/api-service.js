@@ -77,12 +77,26 @@ class FIXGHARApiService {
             // Add response interceptor
             this.addResponseInterceptor(response);
 
-            // Parse response
-            const result = await response.json();
+            const rawText = await response.text();
+            let result = {};
+            try {
+                result = rawText ? JSON.parse(rawText) : {};
+            } catch {
+                result = { message: rawText || `HTTP ${response.status}` };
+            }
 
-            // Handle non-2xx responses
+            // Handle non-2xx responses (preserve server code/message for OTP/SMS flows)
             if (!response.ok) {
-                throw new Error(result.error || result.message || `HTTP ${response.status}`);
+                const msg =
+                    result.message ||
+                    result.error ||
+                    `Request failed (${response.status})`;
+                const apiErr = new Error(msg);
+                apiErr.status = response.status;
+                apiErr.code = result.code;
+                apiErr.field = result.field;
+                apiErr.errors = result.errors;
+                throw apiErr;
             }
 
             return {
@@ -93,6 +107,11 @@ class FIXGHARApiService {
             };
 
         } catch (error) {
+            // Re-throw API errors we constructed above (already have .code / .status)
+            if (error && typeof error.message === 'string' && 'status' in error) {
+                throw error;
+            }
+
             // Handle network errors
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 throw new Error('Network error: Unable to connect to server. Please check if backend is running on port 5000.');
@@ -113,16 +132,6 @@ class FIXGHARApiService {
                 throw new Error('Network error: Unable to connect to server. Please check if backend is running on port 5000.');
             }
 
-            // Handle HTTP errors
-            if (error.message.includes('400')) {
-                throw new Error('Invalid data provided. Please check your input and try again.');
-            }
-
-            if (error.message.includes('500')) {
-                throw new Error('Server error occurred. Please try again later.');
-            }
-
-            // Re-throw the original error if it's not a network error
             throw error;
         }
     }
@@ -130,6 +139,7 @@ class FIXGHARApiService {
     // Authentication Methods
     async registerUser(userData) {
         console.log('🚀 Starting user registration...');
+        console.log('📱 [OTP] Phone in register payload (before API):', userData?.phone);
         console.log('signupPayload (api-service, password redacted)', {
             ...userData,
             password: userData?.password ? '[REDACTED]' : userData?.password
@@ -139,6 +149,7 @@ class FIXGHARApiService {
 
     async registerFixer(fixerData) {
         console.log('🚀 Starting fixer registration...');
+        console.log('📱 [OTP] Phone in fixer register payload (before API):', fixerData?.phone);
         return this.apiCall('/auth/register/fixer', 'POST', fixerData);
     }
 

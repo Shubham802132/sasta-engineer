@@ -710,6 +710,34 @@
             }, 5000);
         }
 
+        /** Clear signup OTP feedback from backend otpDelivery (does not change signup flow). */
+        function showSignupOtpFeedback(serverMessage, otpDelivery, registrationTitle) {
+            if (!otpDelivery) {
+                showModernAlert(registrationTitle || 'Registration', serverMessage || 'Success.', 'success');
+                return;
+            }
+            if (otpDelivery.status === 'sent') {
+                showModernAlert(
+                    'OTP sent successfully',
+                    'Check your phone for the verification code.',
+                    'success'
+                );
+                return;
+            }
+            if (otpDelivery.status === 'test_mode') {
+                showModernAlert('SMS test mode', serverMessage, 'info');
+                return;
+            }
+            if (
+                otpDelivery.code === 'SMS_PROVIDER_ERROR' ||
+                otpDelivery.code === 'SMS_NOT_CONFIGURED'
+            ) {
+                showModernAlert('SMS provider error', serverMessage, 'error');
+                return;
+            }
+            showModernAlert('OTP issue', serverMessage, 'error');
+        }
+
         // Override default alert
         const originalAlert = window.alert;
         window.alert = function(message) {
@@ -1127,6 +1155,7 @@
         // Resend OTP Handler
         async function resendOTP(userType, phone) {
             try {
+                console.log('📱 [resend OTP] phone sent to backend:', phone);
                 const apiService = new FIXGHARApiService();
                 const response = await apiService.resendOTP({
                     phone: phone,
@@ -1134,13 +1163,27 @@
                 });
                 
                 if (response.success) {
-                    alert('OTP resent successfully! Please check your phone.');
+                    showModernAlert(
+                        'OTP sent successfully',
+                        response.message || 'Check your phone for the verification code.',
+                        'success'
+                    );
                 } else {
-                    alert('Failed to resend OTP: ' + (response.message || 'Unknown error'));
+                    showModernAlert(
+                        'SMS provider error',
+                        response.message || 'Could not resend OTP.',
+                        'error'
+                    );
                 }
             } catch (error) {
                 console.error('Resend OTP error:', error);
-                alert('Resend OTP error: ' + error.message);
+                if (error.code === 'INVALID_PHONE') {
+                    showModernAlert('Invalid phone number', error.message, 'error');
+                } else if (error.status === 502 || error.code === 'SMS_PROVIDER_ERROR') {
+                    showModernAlert('SMS provider error', error.message, 'error');
+                } else {
+                    showModernAlert('Resend OTP error', error.message, 'error');
+                }
             }
         }
         
@@ -1205,6 +1248,8 @@
                 });
                 console.log('🔑 Outgoing signup payload keys:', Object.keys(formData));
 
+                console.log('📱 [signup] Phone sent to backend (raw, before register API):', formData.phone);
+
                 // Create API service instance
                 const apiService = new FIXGHARApiService();
                 
@@ -1214,8 +1259,11 @@
                 if (response.success) {
                     console.log('✅ Registration successful:', response);
                     
-                    // Show success message
-                    alert('Registration successful! Please check your phone for OTP verification.');
+                    showSignupOtpFeedback(
+                        response.message,
+                        response.data?.otpDelivery,
+                        'User registration'
+                    );
                     
                     // Show OTP verification modal
                     showOTPVerificationModal('user', formData.phone);
@@ -1227,12 +1275,20 @@
                     closeSignupModal();
                 } else {
                     console.error('❌ Registration failed:', response);
-                    alert('Registration failed: ' + (response.message || 'Unknown error'));
+                    showModernAlert(
+                        'Registration failed',
+                        response.message || 'Unknown error',
+                        'error'
+                    );
                 }
                 
             } catch (error) {
                 console.error('❌ Registration error:', error);
-                alert('Registration error: ' + error.message);
+                if (error.code === 'INVALID_PHONE') {
+                    showModernAlert('Invalid phone number', error.message, 'error');
+                } else {
+                    showModernAlert('Registration error', error.message, 'error');
+                }
             }
         }
         
@@ -1277,6 +1333,8 @@
                     address: formData.address
                 });
 
+                console.log('📱 [signup] Fixer phone sent to backend (raw, before register API):', formData.phone);
+
                 // Create API service instance
                 const apiService = new FIXGHARApiService();
                 
@@ -1286,8 +1344,11 @@
                 if (response.success) {
                     console.log('✅ Fixer registration successful:', response);
                     
-                    // Show success message
-                    alert('Fixer registration successful! Please check your phone for OTP verification.');
+                    showSignupOtpFeedback(
+                        response.message,
+                        response.data?.otpDelivery,
+                        'Fixer registration'
+                    );
                     
                     // Show OTP verification modal
                     showOTPVerificationModal('fixer', formData.phone);
@@ -1299,12 +1360,20 @@
                     closeSignupModal();
                 } else {
                     console.error('❌ Fixer registration failed:', response);
-                    alert('Fixer registration failed: ' + (response.message || 'Unknown error'));
+                    showModernAlert(
+                        'Registration failed',
+                        response.message || 'Unknown error',
+                        'error'
+                    );
                 }
                 
             } catch (error) {
                 console.error('❌ Fixer registration error:', error);
-                alert('Fixer registration error: ' + error.message);
+                if (error.code === 'INVALID_PHONE') {
+                    showModernAlert('Invalid phone number', error.message, 'error');
+                } else {
+                    showModernAlert('Fixer registration error', error.message, 'error');
+                }
             }
         }
         
