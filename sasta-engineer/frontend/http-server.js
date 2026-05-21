@@ -57,7 +57,7 @@ const server = http.createServer((req, res) => {
         } else {
             filePath = path.join(__dirname, pathname);
         }
-    } else if (pathname.startsWith('/asset/')) {
+    } else if (pathname.startsWith('/assets/') || pathname.startsWith('/asset/')) {
         // Handle asset files (images, etc.)
         filePath = path.join(__dirname, pathname);
     } else if (pathname.endsWith('.png') || pathname.endsWith('.jpg') || pathname.endsWith('.jpeg') || pathname.endsWith('.gif') || pathname.endsWith('.svg')) {

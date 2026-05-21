@@ -1,8 +1,52 @@
-node_modules
-.env
-.env.*
+# Dependencies
+node_modules/
 
-# Backend env files
-backend/config.env
+# Environment & secrets (never commit real values)
+.env
+.env.local
+.env.production
 backend/.env
-backend/.env.*
+backend/config.env
+!backend/.env.example
+
+# Logs & debug output
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime / cache / build
+.cache/
+.npm/
+.eslintcache
+coverage/
+dist/
+build/
+tmp/
+temp/
+*.tmp
+*.temp
+*.pid
+*.seed
+
+# Uploads (keep folder marker only)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Legacy duplicate assets (canonical: frontend/assets/)
+frontend/asset/
+
+# Deployment local state
+.vercel/
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Optional local workspace
+fixghar.code-workspace

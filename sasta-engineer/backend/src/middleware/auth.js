@@ -6,12 +6,12 @@ const Fixer = require('../models/fixer');
 const protect = async (req, res, next) => {
     let token;
 
-    // Check if token exists in headers
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies && req.cookies.fixghar_token) {
+        token = req.cookies.fixghar_token;
     }
 
-    // Check if token exists
     if (!token) {
         return res.status(401).json({
             success: false,
@@ -119,10 +119,8 @@ const optionalAuth = async (req, res, next) => {
     // Check if token exists in headers
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-        console.log('🔑 Token received in optionalAuth:', token.substring(0, 20) + '...');
-    } else {
-        console.log('⚠️ No authorization header found');
-        console.log('Headers:', req.headers);
+    } else if (req.cookies && req.cookies.fixghar_token) {
+        token = req.cookies.fixghar_token;
     }
 
     // If no token, continue without authentication

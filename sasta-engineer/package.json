@@ -4,9 +4,10 @@
   "description": "FIXGHAR - Home Service Platform",
   "main": "backend/server.js",
   "scripts": {
-    "start": "FIXGHAR-SMART-LAUNCHER.bat",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "cd backend && node server.js",
+    "start": "npm run backend",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend\"",
+    "backend": "cd backend && npm start",
+    "backend:dev": "cd backend && npm run dev",
     "frontend": "cd frontend && npm start",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "setup": "FIXGHAR-COMPLETE-SETUP.bat",

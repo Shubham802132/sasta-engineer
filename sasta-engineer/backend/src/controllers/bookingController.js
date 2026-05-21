@@ -86,7 +86,7 @@ const createBooking = async (req, res) => {
         
         // Create booking data that matches the model structure
         const bookingData = {
-            user: req.user?.id || null, // Handle both authenticated and non-authenticated users
+            user: req.user.id,
             service: null, // Don't set service as ObjectId, use serviceCategory instead
             serviceCategory: service || 'General Repair',
             status: 'pending',

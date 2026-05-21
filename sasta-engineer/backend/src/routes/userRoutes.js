@@ -38,9 +38,12 @@ router.get('/bookings/:id', getUserBookingById);
 // @access  Private
 router.get('/dashboard', async (req, res) => {
     try {
-        const user = req.user;
-        
-        // Get user's recent bookings
+        const User = require('../models/user');
+        const user = await User.findById(req.user.id).select('name email phone');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
         const Booking = require('../models/booking');
         const recentBookings = await Booking.find({ user: user._id })
             .populate('service', 'name category')
@@ -50,13 +53,13 @@ router.get('/dashboard', async (req, res) => {
 
         // Get user's booking statistics
         const totalBookings = await Booking.countDocuments({ user: user._id });
-        const pendingBookings = await Booking.countDocuments({ 
-            user: user._id, 
-            status: 'pending' 
+        const pendingBookings = await Booking.countDocuments({
+            user: user._id,
+            status: 'pending'
         });
-        const completedBookings = await Booking.countDocuments({ 
-            user: user._id, 
-            status: 'completed' 
+        const completedBookings = await Booking.countDocuments({
+            user: user._id,
+            status: 'completed'
         });
 
         res.json({

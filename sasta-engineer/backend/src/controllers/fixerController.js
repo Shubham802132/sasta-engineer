@@ -385,9 +385,58 @@ const getFixerReviews = async (req, res) => {
     }
 };
 
+// @desc    Upload fixer profile image / documents
+// @route   POST /api/fixers/upload
+// @access  Private
+const uploadFixerDocuments = async (req, res) => {
+    try {
+        const fixer = await Fixer.findById(req.user.id);
+        if (!fixer) {
+            return res.status(404).json({ success: false, message: 'Fixer not found' });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'No files uploaded' });
+        }
+
+        if (!fixer.documents) fixer.documents = {};
+
+        req.files.forEach((file) => {
+            const publicPath = `/uploads/${file.filename}`;
+            if (file.fieldname === 'profilePicture' || file.mimetype.startsWith('image/')) {
+                fixer.documents.profilePicture = publicPath;
+            } else {
+                fixer.documents.idProof = publicPath;
+            }
+        });
+
+        await fixer.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Files uploaded successfully',
+            data: {
+                documents: fixer.documents,
+                files: req.files.map((f) => ({
+                    field: f.fieldname,
+                    filename: f.filename,
+                    url: `/uploads/${f.filename}`
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Upload fixer documents error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Upload failed'
+        });
+    }
+};
+
 module.exports = {
     getFixerProfile,
     updateFixerProfile,
+    uploadFixerDocuments,
     getFixerBookings,
     getServiceRequests,
     getFixerBookingById,

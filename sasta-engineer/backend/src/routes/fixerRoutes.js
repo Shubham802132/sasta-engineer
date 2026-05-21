@@ -3,6 +3,7 @@ const { protect, authorize, authorizeServiceCategory } = require('../middleware/
 const {
     getFixerProfile,
     updateFixerProfile,
+    uploadFixerDocuments,
     getFixerBookings,
     getServiceRequests,
     getFixerBookingById,
@@ -12,6 +13,7 @@ const {
     updateFixerOnlineStatus,
     getFixerReviews
 } = require('../controllers/fixerController');
+const { upload } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -36,6 +38,19 @@ router.get('/profile', getFixerProfile);
 // @route   PUT /api/fixers/profile
 // @access  Private
 router.put('/profile', updateFixerProfile);
+
+// @desc    Upload fixer profile image / documents
+// @route   POST /api/fixers/upload
+// @access  Private
+router.post(
+    '/upload',
+    upload.fields([
+        { name: 'profilePicture', maxCount: 1 },
+        { name: 'idProof', maxCount: 1 },
+        { name: 'documents', maxCount: 2 }
+    ]),
+    uploadFixerDocuments
+);
 
 // @desc    Get fixer bookings
 // @route   GET /api/fixers/bookings

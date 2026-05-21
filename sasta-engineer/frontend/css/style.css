@@ -239,7 +239,7 @@ html {
 
 /* 5) Hero Section */
 .hero {
-    background: url('../asset/hero.png') no-repeat center center/cover;
+    background: url('../assets/hero.png') no-repeat center center/cover;
     transform: translateZ(0);
     background-attachment: fixed;
     color: #b0d0f1;
@@ -534,7 +534,7 @@ html {
 
 /* 6) Services Section */
 .services {
-    background-image: url('../asset/service.png');
+    background-image: url('../assets/service.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -592,7 +592,7 @@ html {
 
 /* 7) About Section */
 .about {
-    background-image: url('../asset/about.png');
+    background-image: url('../assets/about.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;

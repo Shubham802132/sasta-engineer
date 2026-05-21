@@ -19,9 +19,45 @@ function normalizeUsername(username) {
 function getRefreshCookieMaxAgeMs() {
     const raw = process.env.JWT_REFRESH_EXPIRE;
     const days = Number.parseInt(raw, 10);
-    // Default to 7 days if missing/invalid
     const safeDays = Number.isFinite(days) && days > 0 ? days : 7;
     return safeDays * 24 * 60 * 60 * 1000;
+}
+
+function parseExpireToMs(expire) {
+    if (!expire) return 24 * 60 * 60 * 1000;
+    const match = String(expire).match(/^(\d+)([dhms])$/i);
+    if (!match) return 24 * 60 * 60 * 1000;
+    const n = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+    const mult = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+    return n * (mult[unit] || 3600000);
+}
+
+function getAccessCookieMaxAgeMs() {
+    return parseExpireToMs(process.env.JWT_EXPIRE);
+}
+
+function setAuthCookies(res, token, refreshToken) {
+    const isProd = process.env.NODE_ENV === 'production';
+    const base = {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax'
+    };
+    res.cookie('fixghar_token', token, { ...base, maxAge: getAccessCookieMaxAgeMs() });
+    if (refreshToken) {
+        res.cookie('refreshToken', refreshToken, {
+            ...base,
+            maxAge: getRefreshCookieMaxAgeMs()
+        });
+    }
+}
+
+function clearAuthCookies(res) {
+    const isProd = process.env.NODE_ENV === 'production';
+    const base = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' };
+    res.clearCookie('fixghar_token', base);
+    res.clearCookie('refreshToken', base);
 }
 
 function ensureAuthPrereqs(res) {
@@ -285,14 +321,18 @@ const registerUser = async (req, res) => {
             registerMessage = 'OTP generated (test mode). Verify OTP to create your account.';
         }
 
+        const responseData = {
+            phone: phoneForSave,
+            otpDelivery
+        };
+        if (process.env.NODE_ENV !== 'production') {
+            responseData.otp = otpRecord.otp;
+        }
+
         return res.status(201).json({
             success: true,
             message: registerMessage,
-            data: {
-                phone: phoneForSave,
-                otp: otpRecord.otp,
-                otpDelivery
-            }
+            data: responseData
         });
 
     } catch (error) {
@@ -489,14 +529,18 @@ const registerFixer = async (req, res) => {
             fixerMsg = 'OTP generated (test mode). Verify OTP to create your account.';
         }
 
+        const fixerResponseData = {
+            phone: phoneForSave,
+            otpDelivery
+        };
+        if (process.env.NODE_ENV !== 'production') {
+            fixerResponseData.otp = otpRecord.otp;
+        }
+
         return res.status(201).json({
             success: true,
             message: fixerMsg,
-            data: {
-                phone: phoneForSave,
-                otp: otpRecord.otp,
-                otpDelivery
-            }
+            data: fixerResponseData
         });
 
     } catch (error) {
@@ -608,13 +652,7 @@ const loginUser = async (req, res) => {
         const refreshToken = user.getRefreshToken();
         await user.save(); // Save refresh token
 
-        // Set secure cookie for refresh token
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: getRefreshCookieMaxAgeMs()
-        });
+        setAuthCookies(res, token, refreshToken);
 
         res.status(200).json({
             success: true,
@@ -693,8 +731,8 @@ const loginFixer = async (req, res) => {
         fixer.lastLogin = new Date();
         await fixer.save();
 
-        // Generate token
         const token = fixer.getSignedJwtToken();
+        setAuthCookies(res, token);
 
         res.status(200).json({
             success: true,
@@ -960,6 +998,28 @@ const resendOTP = async (req, res) => {
     }
 };
 
+// @desc    Unified login (user or fixer)
+// @route   POST /api/auth/login
+// @access  Public
+const login = async (req, res) => {
+    const role = (req.body.role || req.body.userType || 'user').toLowerCase();
+    if (role === 'fixer') {
+        return loginFixer(req, res);
+    }
+    return loginUser(req, res);
+};
+
+// @desc    Logout
+// @route   POST /api/auth/logout
+// @access  Private (optional)
+const logout = async (req, res) => {
+    clearAuthCookies(res);
+    res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+    });
+};
+
 // @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
@@ -1019,6 +1079,8 @@ module.exports = {
     registerFixer,
     loginUser,
     loginFixer,
+    login,
+    logout,
     verifyOTP,
     resendOTP,
     getMe

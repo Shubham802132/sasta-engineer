@@ -138,19 +138,11 @@ class FIXGHARApiService {
 
     // Authentication Methods
     async registerUser(userData) {
-        console.log('🚀 Starting user registration...');
-        console.log('📱 [OTP] Phone in register payload (before API):', userData?.phone);
-        console.log('signupPayload (api-service, password redacted)', {
-            ...userData,
-            password: userData?.password ? '[REDACTED]' : userData?.password
-        });
-        return this.apiCall('/auth/register/user', 'POST', userData);
+        return this.apiCall('/auth/user/signup', 'POST', userData);
     }
 
     async registerFixer(fixerData) {
-        console.log('🚀 Starting fixer registration...');
-        console.log('📱 [OTP] Phone in fixer register payload (before API):', fixerData?.phone);
-        return this.apiCall('/auth/register/fixer', 'POST', fixerData);
+        return this.apiCall('/auth/fixer/signup', 'POST', fixerData);
     }
 
     // Health check method for connection testing
@@ -185,12 +177,16 @@ class FIXGHARApiService {
         }
     }
 
+    async login(credentials, role = 'user') {
+        return this.apiCall('/auth/login', 'POST', { ...credentials, role });
+    }
+
     async loginUser(credentials) {
-        return this.apiCall('/auth/login/user', 'POST', credentials);
+        return this.login(credentials, 'user');
     }
 
     async loginFixer(credentials) {
-        return this.apiCall('/auth/login/fixer', 'POST', credentials);
+        return this.login(credentials, 'fixer');
     }
 
     async verifyOTP(otpData) {

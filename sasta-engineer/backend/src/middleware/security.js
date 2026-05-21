@@ -27,11 +27,16 @@ const securityHeaders = helmet({
     }
 });
 
-// Rate limiting for login attempts - temporarily disabled for testing
-const loginRateLimit = (req, res, next) => {
-    // Temporarily bypass rate limiting for testing
-    next();
-};
+const loginRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseInt(process.env.LOGIN_RATE_LIMIT_MAX, 10) || 10,
+    message: {
+        success: false,
+        message: 'Too many login attempts. Please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 // General API rate limiting
 const apiRateLimit = rateLimit({
@@ -59,43 +64,26 @@ const sanitizeData = [
 
 // Request logging middleware
 const requestLogger = (req, res, next) => {
-    const timestamp = new Date().toISOString();
-    const method = req.method;
-    const url = req.originalUrl;
-    const ip = req.ip || req.connection.remoteAddress;
-    const userAgent = req.get('User-Agent') || 'Unknown';
-    
-    console.log(`[${timestamp}] ${method} ${url} - IP: ${ip} - UA: ${userAgent.substring(0, 50)}...`);
-    
-    // Log authentication attempts
-    if (url.includes('/login') && method === 'POST') {
-        console.log(`🔐 Login attempt from IP: ${ip} for email: ${req.body?.email || 'unknown'}`);
+    if (process.env.NODE_ENV === 'production' && process.env.REQUEST_LOGGING !== 'true') {
+        return next();
     }
-    
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
     next();
 };
 
 // Security validation middleware
 const validateRequest = (req, res, next) => {
     // Check for suspicious patterns
+    // Target injection patterns only — avoid blocking normal words like "update" in addresses
     const suspiciousPatterns = [
-        /script/i,
-        /javascript/i,
-        /vbscript/i,
-        /onload/i,
-        /onerror/i,
-        /<script/i,
-        /<\/script/i,
-        /\$where/i,
-        /\$ne/i,
-        /\$gt/i,
-        /\$lt/i,
-        /union/i,
-        /select/i,
-        /insert/i,
-        /delete/i,
-        /drop/i,
-        /update/i
+        /<script\b/i,
+        /<\/script>/i,
+        /javascript:/i,
+        /vbscript:/i,
+        /on\w+\s*=/i,
+        /\$where\b/i,
+        /\{\s*"\$(?:gt|ne|lt|regex)"/i
     ];
     
     const checkObject = (obj, path = '') => {

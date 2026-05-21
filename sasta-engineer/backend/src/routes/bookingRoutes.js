@@ -1,5 +1,5 @@
 const express = require('express');
-const { protect, authorize, optionalAuth } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const {
     createBooking,
     getAllBookings,
@@ -15,18 +15,15 @@ const {
 
 const router = express.Router();
 
-// All routes are protected (except booking creation for testing)
-// router.use(protect);
-
 // @desc    Create new booking
 // @route   POST /api/bookings
-// @access  Private (Users only) - Using optionalAuth for debugging
-router.post('/', optionalAuth, createBooking);
+// @access  Private (users only)
+router.post('/', protect, authorize('user'), createBooking);
 
 // @desc    Get all bookings (filtered by user role)
 // @route   GET /api/bookings
-// @access  Private - Using optionalAuth for debugging
-router.get('/', optionalAuth, getAllBookings);
+// @access  Private
+router.get('/', protect, getAllBookings);
 
 // @desc    Check booking eligibility
 // @route   GET /api/bookings/eligibility

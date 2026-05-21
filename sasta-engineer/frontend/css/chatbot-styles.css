@@ -96,7 +96,7 @@ body {
 
 .floating-chat-icon::before {
     content: '';
-    background-image: url('../asset/icone.png');
+    background-image: url('../assets/icone.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
