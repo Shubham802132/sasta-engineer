@@ -274,18 +274,20 @@
                 </div>
             </div>
 
-            <!-- Active Booking History -->
-            <div class="section-header">
-                <h2>My Booked Services</h2>
-                <button class="view-all-btn" onclick="showBookings()">View All</button>
-            </div>
-            <div class="booking-history-cards" id="bookingHistoryCards">
-                <!-- Booking history will be loaded dynamically -->
-                <div class="no-bookings-message">
-                    <p>No booking history available at the moment.</p>
-                    <p style="font-size: 12px; margin-top: 5px; color: #999;">Your booking history will appear here once you make a booking.</p>
+            <!-- My Booked Services -->
+            <section class="booked-services-section" id="bookedServicesSection" aria-labelledby="bookedServicesHeading">
+                <div class="section-header booked-services-header">
+                    <h2 id="bookedServicesHeading">My Booked Services</h2>
+                    <button type="button" class="view-all-btn" onclick="showBookings()">View All</button>
                 </div>
-            </div>
+                <div class="booking-history-cards" id="bookingHistoryCards">
+                    <div class="no-bookings-message" id="noBookingsMessage">
+                        <div class="no-bookings-icon" aria-hidden="true"><i class="fas fa-calendar-check"></i></div>
+                        <p class="no-bookings-title">No bookings yet</p>
+                        <p class="no-bookings-hint">Your booked services will appear here after you make a booking.</p>
+                    </div>
+                </div>
+            </section>
             </div>
 
 
@@ -582,35 +584,151 @@
             };
 
             // Provide missing loaders (so existing DOMContentLoaded calls don’t crash)
+            const BOOKED_SERVICE_ICONS = {
+                plumbing: 'fa-wrench',
+                electrical: 'fa-bolt',
+                carpentry: 'fa-hammer',
+                painting: 'fa-paint-roller',
+                'general repair': 'fa-tools',
+                'ac repair': 'fa-fan',
+                default: 'fa-tools'
+            };
+
+            function escapeHtml(str) {
+                return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[c]);
+            }
+
+            function formatServiceTitle(raw) {
+                const s = String(raw || 'Service').trim();
+                if (!s) return 'Service';
+                return s.replace(/\b\w/g, (c) => c.toUpperCase());
+            }
+
+            function getBookedServiceIcon(serviceName) {
+                const key = String(serviceName || '').trim().toLowerCase();
+                return BOOKED_SERVICE_ICONS[key] || BOOKED_SERVICE_ICONS.default;
+            }
+
+            function getStatusBadgeClass(status) {
+                const s = String(status || 'pending').toLowerCase().replace(/\s+/g, '_');
+                if (s === 'completed') return 'status-completed';
+                if (s === 'cancelled' || s === 'rejected') return 'status-cancelled';
+                if (['in_progress', 'confirmed', 'accepted', 'assigned', 'ongoing'].includes(s)) {
+                    return 'status-in-progress';
+                }
+                return 'status-pending';
+            }
+
+            function formatStatusLabel(status) {
+                return String(status || 'pending')
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, (c) => c.toUpperCase());
+            }
+
+            function formatBookingDateTime(booking) {
+                const dateRaw =
+                    booking?.preferredDate ||
+                    booking?.bookingDetails?.preferredDate ||
+                    booking?.createdAt;
+                const timeRaw =
+                    booking?.preferredTime ||
+                    booking?.bookingDetails?.preferredTime;
+
+                if (!dateRaw) return 'Date not set';
+
+                const d = new Date(dateRaw);
+                if (Number.isNaN(d.getTime())) return 'Date not set';
+
+                const datePart = d.toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+
+                let timePart = '';
+                if (timeRaw && typeof timeRaw === 'string' && !timeRaw.includes('T')) {
+                    timePart = timeRaw.trim();
+                } else {
+                    timePart = d.toLocaleTimeString('en-GB', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                }
+
+                return `${datePart} • ${timePart}`;
+            }
+
+            function renderBookedServiceCard(booking) {
+                const title = formatServiceTitle(
+                    booking?.service || booking?.serviceCategory || 'Service'
+                );
+                const status = booking?.status || 'pending';
+                const statusClass = getStatusBadgeClass(status);
+                const statusLabel = formatStatusLabel(status);
+                const desc =
+                    booking?.description ||
+                    booking?.bookingDetails?.description ||
+                    'No description provided';
+                const dateText = formatBookingDateTime(booking);
+                const iconClass = getBookedServiceIcon(title);
+
+                return `
+                    <article class="booked-service-card" data-booking-id="${escapeHtml(booking?._id || '')}">
+                        <div class="booked-service-body">
+                            <div class="booked-service-header">
+                                <h3 class="booked-service-title">${escapeHtml(title)}</h3>
+                                <span class="booked-status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+                            </div>
+                            <p class="booked-service-desc">${escapeHtml(desc)}</p>
+                            <div class="booked-service-footer">
+                                <time class="booked-service-datetime" datetime="${escapeHtml(booking?.createdAt || '')}">
+                                    <i class="fas fa-clock" aria-hidden="true"></i>
+                                    ${escapeHtml(dateText)}
+                                </time>
+                                <div class="booked-service-icon" aria-hidden="true">
+                                    <i class="fas ${iconClass}"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }
+
             window.loadRecentBookings = window.loadRecentBookings || async function loadRecentBookings() {
                 const svc = ensureApiService();
                 const container = document.getElementById('bookingHistoryCards');
                 if (!container) return;
 
+                const emptyEl = document.getElementById('noBookingsMessage');
+                container.classList.add('is-loading');
+
                 try {
                     const res = await svc.getUserBookings();
-                    const bookings = res?.data?.data || res?.data || [];
-                    if (!Array.isArray(bookings) || bookings.length === 0) return;
+                    const bookings = res?.data?.data || res?.data || res?.data?.bookings || [];
 
-                    container.innerHTML = bookings.slice(0, 6).map((b) => {
-                        const title = b?.service || b?.serviceCategory || 'Service';
-                        const status = b?.status || 'pending';
-                        const desc = b?.description || b?.bookingDetails?.description || '';
-                        const when = b?.preferredDate || b?.bookingDetails?.preferredDate || b?.createdAt;
-                        const dateText = when ? new Date(when).toLocaleString() : '';
-                        return `
-                            <div class="booking-card">
-                                <div class="booking-card-top">
-                                    <div class="booking-title">${title}</div>
-                                    <div class="booking-status-pill status-${status}">${status}</div>
-                                </div>
-                                <div class="booking-desc">${desc || '—'}</div>
-                                <div class="booking-meta">${dateText}</div>
-                            </div>
-                        `;
-                    }).join('');
+                    if (!Array.isArray(bookings) || bookings.length === 0) {
+                        if (emptyEl) emptyEl.style.display = '';
+                        container.classList.remove('is-loading');
+                        return;
+                    }
+
+                    container.innerHTML = bookings
+                        .slice(0, 6)
+                        .map((b) => renderBookedServiceCard(b))
+                        .join('');
+                    container.classList.remove('is-loading');
                 } catch (err) {
                     console.warn('loadRecentBookings failed:', err);
+                    container.classList.remove('is-loading');
+                    if (emptyEl) {
+                        emptyEl.style.display = '';
+                        emptyEl.querySelector('.no-bookings-title').textContent = 'Could not load bookings';
+                        emptyEl.querySelector('.no-bookings-hint').textContent =
+                            'Please refresh or try again later.';
+                    }
                 }
             };
 

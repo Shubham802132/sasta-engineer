@@ -1119,3 +1119,228 @@ html, body {
         justify-content: center;
     }
 }
+
+/* --------------------------------------------------------------------------
+   My Booked Services — production card layout (overrides generic .booking-card)
+   -------------------------------------------------------------------------- */
+.user-dashboard .booked-services-section {
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 32px;
+}
+
+.user-dashboard .booked-services-header {
+    margin-bottom: 20px;
+}
+
+.user-dashboard .booking-history-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    width: 100%;
+    align-items: stretch;
+}
+
+.user-dashboard .booking-history-cards.is-loading {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+/* Reset imported dashboard .booking-card image layout if any legacy markup remains */
+.user-dashboard .booking-history-cards .booking-card {
+    height: auto;
+    overflow: visible;
+}
+
+.user-dashboard .booked-service-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.user-dashboard .booked-service-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(255, 107, 53, 0.15);
+}
+
+.user-dashboard .booked-service-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.user-dashboard .booked-service-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.user-dashboard .booked-service-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.3;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.user-dashboard .booked-status-badge {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.user-dashboard .booked-status-badge.status-pending {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+.user-dashboard .booked-status-badge.status-in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #93c5fd;
+}
+
+.user-dashboard .booked-status-badge.status-completed {
+    background: #d1fae5;
+    color: #047857;
+    border: 1px solid #6ee7b7;
+}
+
+.user-dashboard .booked-status-badge.status-cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.user-dashboard .booked-service-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #5c5c5c;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.user-dashboard .booked-service-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.user-dashboard .booked-service-datetime {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0;
+}
+
+.user-dashboard .booked-service-datetime i {
+    color: var(--user-primary);
+    font-size: 0.85rem;
+}
+
+.user-dashboard .booked-service-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.12) 0%, rgba(251, 145, 6, 0.18) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--user-primary);
+    font-size: 1.25rem;
+}
+
+.user-dashboard .no-bookings-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 48px 24px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px dashed rgba(255, 107, 53, 0.35);
+    box-shadow: var(--shadow-card);
+}
+
+.user-dashboard .no-bookings-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: rgba(255, 107, 53, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--user-primary);
+    font-size: 1.5rem;
+}
+
+.user-dashboard .no-bookings-title {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.user-dashboard .no-bookings-hint {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #888;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .user-dashboard .booking-history-cards {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .user-dashboard .booked-service-header {
+        flex-wrap: wrap;
+    }
+
+    .user-dashboard .booked-service-footer {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-dashboard .booked-service-body {
+        padding: 16px;
+    }
+
+    .user-dashboard .booked-service-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+}
