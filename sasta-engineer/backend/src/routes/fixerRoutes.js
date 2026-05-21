@@ -14,6 +14,7 @@ const {
     getFixerReviews
 } = require('../controllers/fixerController');
 const { upload } = require('../middleware/upload');
+const { fixerHeartbeat, fixerGoOffline } = require('../controllers/presenceController');
 
 const router = express.Router();
 
@@ -28,6 +29,9 @@ router.get('/service-requests', (req, res) => {
 // All other routes are protected
 router.use(protect);
 router.use(authorize('fixer', 'admin'));
+
+router.post('/presence/heartbeat', fixerHeartbeat);
+router.post('/presence/offline', fixerGoOffline);
 
 // @desc    Get fixer profile
 // @route   GET /api/fixers/profile

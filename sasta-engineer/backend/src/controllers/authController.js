@@ -5,6 +5,7 @@ const PendingRegistration = require('../models/pendingRegistration');
 const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const smsService = require('../utils/smsService');
+const { setFixerOnline, setFixerOffline } = require('../utils/presenceService');
 
 function normalizeEmail(email) {
     if (typeof email !== 'string') return '';
@@ -727,12 +728,13 @@ const loginFixer = async (req, res) => {
             });
         }
 
-        // Update last login
         fixer.lastLogin = new Date();
-        await fixer.save();
+        await setFixerOnline(fixer._id);
 
         const token = fixer.getSignedJwtToken();
         setAuthCookies(res, token);
+
+        const onlineFixer = await Fixer.findById(fixer._id).select('isOnline lastSeen');
 
         res.status(200).json({
             success: true,
@@ -747,7 +749,9 @@ const loginFixer = async (req, res) => {
                     address: fixer.address,
                     serviceCategory: fixer.serviceCategory,
                     isPhoneVerified: fixer.isPhoneVerified,
-                    verificationStatus: fixer.verificationStatus
+                    verificationStatus: fixer.verificationStatus,
+                    isOnline: onlineFixer?.isOnline ?? true,
+                    lastSeen: onlineFixer?.lastSeen
                 },
                 token
             }
@@ -1013,6 +1017,13 @@ const login = async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private (optional)
 const logout = async (req, res) => {
+    try {
+        if (req.user?.role === 'fixer' && req.user?.id) {
+            await setFixerOffline(req.user.id);
+        }
+    } catch (e) {
+        console.error('logout presence error:', e.message);
+    }
     clearAuthCookies(res);
     res.status(200).json({
         success: true,

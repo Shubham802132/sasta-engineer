@@ -1344,3 +1344,265 @@ html, body {
         font-size: 1.1rem;
     }
 }
+
+/* —— Online Fixers —— */
+.user-dashboard .live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    vertical-align: middle;
+    animation: onlinePulse 1.5s ease-in-out infinite;
+}
+
+.user-dashboard .online-fixers-section {
+    margin-top: 8px;
+}
+
+.user-dashboard .online-fixers-loading .loading-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(255, 107, 53, 0.2);
+    border-top-color: var(--user-primary);
+    border-radius: 50%;
+    animation: onlineFixersSpin 0.85s linear infinite;
+}
+
+.user-dashboard .online-fixers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.user-dashboard .refresh-online-fixers-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 107, 53, 0.12);
+    color: var(--user-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.user-dashboard .refresh-online-fixers-btn:hover {
+    background: rgba(255, 107, 53, 0.22);
+    transform: translateY(-1px);
+}
+
+.user-dashboard .online-fixers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 20px;
+}
+
+.user-dashboard .online-fixers-loading {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 56px 24px;
+    color: #666;
+}
+
+.user-dashboard .online-fixers-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(255, 107, 53, 0.2);
+    border-top-color: var(--user-primary);
+    border-radius: 50%;
+    animation: onlineFixersSpin 0.85s linear infinite;
+}
+
+@keyframes onlineFixersSpin {
+    to { transform: rotate(360deg); }
+}
+
+.user-dashboard .online-fixers-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 48px 28px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px dashed rgba(40, 167, 69, 0.35);
+    box-shadow: var(--shadow-card);
+}
+
+.user-dashboard .online-fixers-empty i {
+    font-size: 2.5rem;
+    color: #28a745;
+    opacity: 0.6;
+    margin-bottom: 12px;
+}
+
+.user-dashboard .online-fixers-empty h3 {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    color: #333;
+}
+
+.user-dashboard .online-fixers-empty p {
+    margin: 0;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.user-dashboard .online-fixer-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.user-dashboard .online-fixer-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+.user-dashboard .online-fixer-avatar-wrap {
+    position: relative;
+    padding: 24px 24px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.user-dashboard .online-fixer-avatar-img,
+.user-dashboard .online-fixer-avatar-fallback {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-dashboard .online-fixer-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--user-primary) 0%, #fb9106 100%);
+    color: #fff;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.user-dashboard .online-fixer-live-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #fff;
+    background: #28a745;
+    border-radius: 20px;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+}
+
+.user-dashboard .online-fixer-live-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    background: #fff;
+    border-radius: 50%;
+    vertical-align: middle;
+    animation: onlinePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes onlinePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.user-dashboard .online-fixer-content {
+    padding: 16px 20px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-dashboard .online-fixer-name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #222;
+    text-align: center;
+}
+
+.user-dashboard .online-fixer-service {
+    margin: 6px 0 12px;
+    text-align: center;
+    color: var(--user-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.user-dashboard .online-fixer-meta-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.user-dashboard .online-fixer-meta-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.user-dashboard .online-fixer-meta-row .fa-star {
+    color: #f5a623;
+}
+
+.user-dashboard .online-fixer-location {
+    margin: 0 0 16px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #777;
+}
+
+.user-dashboard .online-fixer-book-btn {
+    margin-top: auto;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--user-primary) 0%, #fb9106 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.user-dashboard .online-fixer-book-btn:hover {
+    opacity: 0.92;
+    transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+    .user-dashboard .online-fixers-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}

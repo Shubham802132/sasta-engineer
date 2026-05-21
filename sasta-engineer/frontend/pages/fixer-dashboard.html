@@ -207,6 +207,7 @@
     <script src="../config.js"></script>
     <script src="../js/api-service.js"></script>
     <script src="../js/state-service.js"></script>
+    <script src="../js/fixer-presence.js"></script>
     <!-- Removed missing script:
          - ../scripts/fixer-dashboard-script.js
          (It was causing 404s in production.) -->
@@ -1098,21 +1099,32 @@
             }
         }
         
-        function toggleAvailability() {
+        async function toggleAvailability() {
             const toggleSwitch = document.getElementById('toggleSwitch');
             const availabilityText = document.getElementById('availabilityText');
-            
-            let isOnline = localStorage.getItem('fixer_online') === 'true';
-            isOnline = !isOnline;
-            
+            const wasOnline = localStorage.getItem('fixer_online') === 'true';
+            const isOnline = !wasOnline;
+
+            try {
+                const svc = window.apiService || new FIXGHARApiService();
+                await svc.setFixerOnlineStatus(isOnline);
+                if (isOnline && typeof window.startFixerPresence === 'function') {
+                    window.startFixerPresence();
+                } else if (!isOnline && typeof window.fixerGoOfflineNow === 'function') {
+                    await window.fixerGoOfflineNow();
+                    window.stopFixerPresence?.();
+                }
+            } catch (e) {
+                console.warn('toggleAvailability:', e);
+            }
+
             localStorage.setItem('fixer_online', isOnline.toString());
-            
             if (isOnline) {
-                toggleSwitch.classList.add('online');
-                availabilityText.textContent = 'Online';
+                toggleSwitch?.classList.add('online');
+                if (availabilityText) availabilityText.textContent = 'Online';
             } else {
-                toggleSwitch.classList.remove('online');
-                availabilityText.textContent = 'Go Online';
+                toggleSwitch?.classList.remove('online');
+                if (availabilityText) availabilityText.textContent = 'Go Online';
             }
         }
         
@@ -1398,25 +1410,43 @@
             alert('Profile picture editor would open here!');
         }
         
-        function toggleProfileStatus() {
+        async function toggleProfileStatus() {
             const statusDot = document.getElementById('profileStatusDot');
             const statusText = document.getElementById('profileStatusText');
-            const button = event.target;
-            
-            if (statusDot.style.background === 'rgb(40, 167, 69)') {
-                // Go offline
+            const button = event?.target;
+            const goingOffline = statusDot?.style.background === 'rgb(40, 167, 69)';
+
+            try {
+                const svc = window.apiService || new FIXGHARApiService();
+                await svc.setFixerOnlineStatus(!goingOffline);
+                if (goingOffline) {
+                    await window.fixerGoOfflineNow?.();
+                    window.stopFixerPresence?.();
+                } else {
+                    window.startFixerPresence?.();
+                }
+            } catch (e) {
+                console.warn('toggleProfileStatus:', e);
+            }
+
+            if (goingOffline) {
                 statusDot.style.background = '#dc3545';
                 statusText.textContent = 'Offline';
                 statusText.style.color = '#dc3545';
-                button.textContent = 'Go Online';
-                button.style.background = '#dc3545';
-                    } else {
-                // Go online
+                if (button) {
+                    button.textContent = 'Go Online';
+                    button.style.background = '#dc3545';
+                }
+                localStorage.setItem('fixer_online', 'false');
+            } else {
                 statusDot.style.background = '#28a745';
                 statusText.textContent = 'Online & Available';
                 statusText.style.color = '#28a745';
-                button.textContent = 'Go Offline';
-                button.style.background = '#28a745';
+                if (button) {
+                    button.textContent = 'Go Offline';
+                    button.style.background = '#28a745';
+                }
+                localStorage.setItem('fixer_online', 'true');
             }
         }
         

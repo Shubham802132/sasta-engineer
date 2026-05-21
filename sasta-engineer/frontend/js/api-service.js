@@ -253,6 +253,22 @@ class FIXGHARApiService {
         return this.apiCall('/fixer/reviews', 'GET');
     }
 
+    async getOnlineFixers() {
+        return this.apiCall('/fixers/online', 'GET');
+    }
+
+    async fixerHeartbeat() {
+        return this.apiCall('/fixers/presence/heartbeat', 'POST');
+    }
+
+    async fixerGoOffline() {
+        return this.apiCall('/fixers/presence/offline', 'POST');
+    }
+
+    async setFixerOnlineStatus(isOnline) {
+        return this.apiCall('/fixers/status', 'PUT', { isOnline: !!isOnline });
+    }
+
     // Service Methods
     async getAllServices() {
         return this.apiCall('/services', 'GET');

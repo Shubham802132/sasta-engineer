@@ -345,15 +345,21 @@ const updateFixerOnlineStatus = async (req, res) => {
             });
         }
 
-        fixer.isOnline = isOnline;
-        await fixer.save();
+        const { setFixerOnline, setFixerOffline } = require('../utils/presenceService');
+        if (isOnline) {
+            await setFixerOnline(fixer._id);
+        } else {
+            await setFixerOffline(fixer._id);
+        }
+        const updated = await Fixer.findById(fixer._id).select('isOnline lastSeen');
 
         res.status(200).json({
             success: true,
             message: `Fixer is now ${isOnline ? 'online' : 'offline'}`,
             data: {
-                isOnline: fixer.isOnline,
-                updatedAt: fixer.updatedAt
+                isOnline: updated.isOnline,
+                lastSeen: updated.lastSeen,
+                updatedAt: updated.updatedAt
             }
         });
     } catch (error) {

@@ -55,6 +55,13 @@ router.get('/fixers/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
+        if (id === 'online') {
+            return res.status(404).json({
+                success: false,
+                message: 'Use GET /api/fixers/online with authentication'
+            });
+        }
+
         if (mongoose.Types.ObjectId.isValid(id)) {
             const fixer = await Fixer.findById(id).select(
                 '-password -resetPasswordToken -resetPasswordExpire'

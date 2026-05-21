@@ -213,7 +213,13 @@ const fixerSchema = new mongoose.Schema({
     },
     isOnline: {
         type: Boolean,
-        default: false
+        default: false,
+        index: true
+    },
+    lastSeen: {
+        type: Date,
+        default: null,
+        index: true
     },
     lastLogin: {
         type: Date
@@ -239,6 +245,7 @@ fixerSchema.index({ serviceCategory: 1 });
 fixerSchema.index({ 'address.city': 1 });
 fixerSchema.index({ 'address.state': 1 });
 fixerSchema.index({ rating: -1 });
+fixerSchema.index({ isOnline: 1, lastSeen: -1 });
 
 // Encrypt password before saving
 fixerSchema.pre('save', async function(next) {

@@ -12,6 +12,7 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const onlineFixersRoutes = require('./routes/onlineFixersRoutes');
 
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
@@ -56,6 +57,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/fixers', onlineFixersRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/fixers', fixerRoutes);
 app.use('/api/services', serviceRoutes);

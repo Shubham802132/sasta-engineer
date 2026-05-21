@@ -228,21 +228,24 @@
                 </div>
             </div>
 
-            <!-- Available Fixers Section -->
-            <div class="section available-fixers-section" id="availableFixersSection">
-                <div class="section-header">
+            <!-- Online Fixers Section -->
+            <section class="section online-fixers-section" id="availableFixersSection" aria-labelledby="onlineFixersHeading">
+                <div class="section-header online-fixers-header">
                     <div class="header-left">
-                        <h2>Available Fixers</h2>
+                        <h2 id="onlineFixersHeading"><span class="live-dot" aria-hidden="true"></span> Online Fixers</h2>
+                        <p class="section-subtitle">Fixers available right now — updates automatically</p>
+                    </div>
+                    <button type="button" class="refresh-online-fixers-btn" id="refreshOnlineFixersBtn" title="Refresh online fixers">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="online-fixers-grid" id="availableFixersContainer">
+                    <div class="online-fixers-loading" id="onlineFixersLoading">
+                        <div class="loading-spinner" aria-hidden="true"></div>
+                        <p>Finding online fixers…</p>
                     </div>
                 </div>
-                <div class="fixers-container" id="availableFixersContainer">
-                    <!-- Fixer cards will be loaded here -->
-                    <div class="no-fixers-message">
-                        <p>Loading available fixers...</p>
-                        <p style="font-size: 12px; margin-top: 5px; color: #999;">Fetching fixer profiles from database</p>
-                    </div>
-                </div>
-            </div>
+            </section>
 
             <!-- Live Tracking Section -->
             <div class="section tracking-section" id="trackingSection">
@@ -577,7 +580,7 @@
             // ---------- Data refresh actions ----------
             window.refreshDashboardData = window.refreshDashboardData || function refreshDashboardData() {
                 try { window.loadTopFixers?.(); } catch {}
-                try { window.loadAvailableFixers?.(); } catch {}
+                try { window.loadOnlineFixers?.(); } catch {}
                 try { window.loadRecentBookings?.(); } catch {}
                 try { window.loadActiveBookings?.(); } catch {}
                 safeAlert('Refresh', 'Refreshing dashboard data…', 'info');
@@ -817,7 +820,8 @@
 
                         if (label.includes('fixers')) {
                             if (fixers) scrollTo(fixers);
-                            window.loadAvailableFixers?.();
+                            window.loadOnlineFixers?.(true);
+                            window.startOnlineFixersPolling?.();
                             return;
                         }
                     });
@@ -869,7 +873,7 @@
                         }
                         if (inAvail) {
                             e.preventDefault();
-                            window.loadAvailableFixers?.();
+                            window.loadOnlineFixers?.();
                             return;
                         }
                     }
@@ -1689,131 +1693,136 @@
             showModernAlert('Services Refreshed', 'Available services have been refreshed successfully!', 'success');
         }
 
-        // Load available fixers in new format
-        async function loadAvailableFixers() {
-            try {
-                console.log('🔄 Loading available fixers...');
-                const base = window.DASHBOARD_API_BASE || API_BASE;
-                
-                const response = await fetch(`${base}/fixers`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    },
-                    mode: 'cors',
-                    cache: 'no-cache'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('✅ Available fixers data received:', data);
-                
-                const fixersContainer = document.getElementById('availableFixersContainer');
-                
-                if (data.success && data.data && data.data.length > 0) {
-                    fixersContainer.innerHTML = '';
-                    
-                    // Show all available fixers
-                    data.data.forEach((fixer, index) => {
-                        const fixerCard = document.createElement('div');
-                        fixerCard.className = 'fixer-profile-card';
-                        
-                        // Get first letter of name for avatar
-                        const firstLetter = (fixer.name || 'F').charAt(0).toUpperCase();
-                        
-                        // Format address
-                        const address = fixer.address ? 
-                            `${fixer.address.street || ''}, ${fixer.address.city || ''}, ${fixer.address.state || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '') : 
-                            'Location not set';
-                        
-                        // Format availability
-                        const availability = fixer.isOnline === true ? 'Currently Online' : 'Currently Offline';
-                        
-                        // Generate stars
-                        const rating = fixer.rating?.average || fixer.averageRating || 0;
-                        const stars = '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
-                        
-                        fixerCard.innerHTML = `
-                            <div class="fixer-avatar-section">
-                                <div class="fixer-avatar">
-                                    ${fixer.profileImage ? 
-                                        `<img src="${fixer.profileImage}" alt="${fixer.name}" onerror="this.parentElement.innerHTML='${firstLetter}'">` : 
-                                        firstLetter
-                                    }
-                                </div>
-                                <div class="fixer-name">${fixer.name || 'Unknown Fixer'}</div>
-                                <div class="fixer-profession">${fixer.serviceCategory || 'General Repair'}</div>
-                                <div class="fixer-rating">
-                                    <span class="stars">${stars}</span>
-                                    <span class="rating-text">${rating} (${fixer.rating?.totalReviews || fixer.totalReviews || 0} reviews)</span>
-                                </div>
-                            </div>
-                            
-                            <div class="fixer-details-section">
-                                <div class="detail-item">
-                                    <span class="detail-label">Experience:</span>
-                                    <span class="detail-value">${fixer.experience || fixer.professionalInfo?.experience || 0} years</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Location:</span>
-                                    <span class="detail-value">${address}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Availability:</span>
-                                    <span class="detail-value">${availability}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Hourly Rate:</span>
-                                    <span class="detail-value">₹${fixer.hourlyRate || fixer.pricing?.hourlyRate || 0}</span>
-                                </div>
-                                <div class="detail-item" style="grid-column: 1 / -1;">
-                                    <span class="detail-label">Description:</span>
-                                    <span class="detail-value">${fixer.bio || 'Professional service provider'}</span>
-                                </div>
-                            </div>
-                            
-                            <div class="fixer-actions">
-                                <button class="contact-btn" onclick="contactFixer('${fixer.id}', '${fixer.name}')">
-                                    Contact
-                                </button>
-                                <button class="view-details-btn" onclick="viewFixerDetails('${fixer.id}')">
-                                    View Details
-                                </button>
-                            </div>
-                        `;
-                        
-                        fixersContainer.appendChild(fixerCard);
-                    });
-                    
-                    console.log(`✅ Displayed ${data.data.length} available fixers`);
-                } else {
-                    fixersContainer.innerHTML = `
-                        <div class="no-fixers-message">
-                            <p>No fixers available at the moment.</p>
-                            <p style="font-size: 12px; margin-top: 5px; color: #999;">No active fixers found in database.</p>
+        let onlineFixersLoading = false;
+        let onlineFixersPollTimer = null;
+
+        function escapeHtmlFixers(str) {
+            return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
+        }
+
+        function renderOnlineFixerCard(fixer) {
+            const name = fixer.name || 'Fixer';
+            const initial = name.charAt(0).toUpperCase();
+            const img = fixer.profileImage || '';
+            const service = fixer.serviceType || fixer.serviceCategory || 'General Repair';
+            const rating = Number(fixer.rating?.average ?? 0).toFixed(1);
+            const reviews = fixer.rating?.totalReviews ?? 0;
+            const exp = fixer.experience ?? 0;
+            const location = fixer.location || 'Location not set';
+            const id = fixer.id || '';
+
+            return `
+                <article class="online-fixer-card" data-fixer-id="${escapeHtmlFixers(id)}">
+                    <div class="online-fixer-avatar-wrap">
+                        ${img
+                            ? `<img class="online-fixer-avatar-img" src="${escapeHtmlFixers(img)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                            : ''}
+                        <div class="online-fixer-avatar-fallback" ${img ? 'style="display:none"' : ''}>${escapeHtmlFixers(initial)}</div>
+                        <span class="online-fixer-live-badge" title="Online now">Online</span>
+                    </div>
+                    <div class="online-fixer-content">
+                        <div class="online-fixer-card-header">
+                            <h3 class="online-fixer-name">${escapeHtmlFixers(name)}</h3>
                         </div>
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error loading available fixers:', error);
-                
-                const fixersContainer = document.getElementById('availableFixersContainer');
-                fixersContainer.innerHTML = `
-                    <div class="no-fixers-message">
-                        <p>Unable to load fixers. Please try again later.</p>
-                        <p style="font-size: 12px; margin-top: 5px; color: #999;">Error: ${error.message}</p>
-                        <button onclick="loadAvailableFixers()" style="margin-top: 10px; padding: 8px 16px; background: #ff6b35; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Try Again
+                        <p class="online-fixer-service">${escapeHtmlFixers(service)}</p>
+                        <div class="online-fixer-meta-row">
+                            <span><i class="fas fa-star"></i> ${rating} (${reviews})</span>
+                            <span><i class="fas fa-briefcase"></i> ${exp} yrs</span>
+                        </div>
+                        <p class="online-fixer-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtmlFixers(location)}</p>
+                        <button type="button" class="online-fixer-book-btn" onclick="bookWithFixer('${escapeHtmlFixers(id)}', '${escapeHtmlFixers(name)}')">
+                            Book Now
                         </button>
                     </div>
-                `;
+                </article>
+            `;
+        }
+
+        window.loadOnlineFixers = async function loadOnlineFixers(force = false) {
+            if (onlineFixersLoading && !force) return;
+            const container = document.getElementById('availableFixersContainer');
+            if (!container) return;
+
+            const token =
+                localStorage.getItem('fixghar_token') ||
+                sessionStorage.getItem('fixghar_token');
+            if (!token) {
+                container.innerHTML = `
+                    <div class="online-fixers-empty">
+                        <p>Please log in to see online fixers.</p>
+                    </div>`;
+                return;
             }
+
+            onlineFixersLoading = true;
+            if (!container.querySelector('.online-fixer-card')) {
+                container.innerHTML = `
+                    <div class="online-fixers-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Finding online fixers…</p>
+                    </div>`;
+            }
+
+            try {
+                const svc = window.apiService || new FIXGHARApiService();
+                const res = await svc.getOnlineFixers();
+                const list = res?.data?.data || res?.data || [];
+
+                if (!Array.isArray(list) || list.length === 0) {
+                    container.innerHTML = `
+                        <div class="online-fixers-empty">
+                            <div class="empty-icon"><i class="fas fa-user-clock"></i></div>
+                            <p class="empty-title">No fixers are currently online</p>
+                            <p class="empty-hint">Check back soon or book a service and we will match you when a fixer comes online.</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = list.map(renderOnlineFixerCard).join('');
+            } catch (err) {
+                console.warn('loadOnlineFixers failed:', err);
+                container.innerHTML = `
+                    <div class="online-fixers-empty online-fixers-error">
+                        <p>Could not load online fixers.</p>
+                        <p class="empty-hint">${escapeHtmlFixers(err.message || 'Please try again')}</p>
+                        <button type="button" class="online-fixer-book-btn" onclick="loadOnlineFixers(true)">Try Again</button>
+                    </div>`;
+            } finally {
+                onlineFixersLoading = false;
+            }
+        };
+
+        window.startOnlineFixersPolling = function startOnlineFixersPolling() {
+            if (onlineFixersPollTimer) return;
+            onlineFixersPollTimer = setInterval(() => {
+                const section = document.getElementById('availableFixersSection');
+                if (section && section.offsetParent !== null) {
+                    loadOnlineFixers();
+                }
+            }, 25000);
+        };
+
+        window.stopOnlineFixersPolling = function stopOnlineFixersPolling() {
+            if (onlineFixersPollTimer) {
+                clearInterval(onlineFixersPollTimer);
+                onlineFixersPollTimer = null;
+            }
+        };
+
+        function bookWithFixer(fixerId, fixerName) {
+            if (typeof openBookingForm === 'function') {
+                openBookingForm();
+                showModernAlert('Book Service', `Booking with ${fixerName}. Complete the form to confirm.`, 'info');
+            } else {
+                showModernAlert('Book Service', `Selected fixer: ${fixerName}`, 'info');
+            }
+        }
+        window.bookWithFixer = bookWithFixer;
+
+        async function loadAvailableFixers() {
+            return loadOnlineFixers(true);
         }
 
         // Contact fixer function
@@ -1839,9 +1848,13 @@
             
             // Load available fixers in new format
             setTimeout(() => {
-                console.log('🔄 Auto-loading available fixers...');
-                loadAvailableFixers();
+                loadOnlineFixers();
+                startOnlineFixersPolling();
             }, 2000);
+
+            document.getElementById('refreshOnlineFixersBtn')?.addEventListener('click', () => {
+                loadOnlineFixers(true);
+            });
             
             // Load active bookings for tracking
             setTimeout(() => {
