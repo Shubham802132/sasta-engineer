@@ -694,45 +694,90 @@ const loginFixer = async (req, res) => {
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            const list = errors.array({ onlyFirstError: true }) || [];
+            const first = list[0];
+            console.error('[loginFixer] validation failed:', JSON.stringify(list));
             return res.status(400).json({
                 success: false,
-                errors: errors.array()
+                message: first?.msg || 'Validation failed',
+                field: first?.path,
+                code: 'VALIDATION_ERROR',
+                errors: list
             });
         }
 
-        const { email, password } = req.body;
+        const email = normalizeEmail(req.body.email);
+        const { password } = req.body;
 
-        // Check if fixer exists
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required',
+                code: 'MISSING_CREDENTIALS'
+            });
+        }
+
         const fixer = await Fixer.findOne({ email }).select('+password');
         if (!fixer) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials'
+                message: 'Invalid email or password',
+                code: 'INVALID_CREDENTIALS'
             });
         }
 
-        // Check if password matches
+        if (!fixer.password) {
+            console.error('[loginFixer] fixer has no password hash:', fixer._id);
+            return res.status(500).json({
+                success: false,
+                message: 'Account configuration error. Please contact support.',
+                code: 'ACCOUNT_CONFIG_ERROR'
+            });
+        }
+
         const isMatch = await fixer.matchPassword(password);
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials'
+                message: 'Invalid email or password',
+                code: 'INVALID_CREDENTIALS'
             });
         }
 
-        // Check if fixer is active
         if (!fixer.isActive) {
             return res.status(401).json({
                 success: false,
-                message: 'Account is deactivated. Please contact support.'
+                message: 'Account is deactivated. Please contact support.',
+                code: 'ACCOUNT_INACTIVE'
             });
         }
 
-        fixer.lastLogin = new Date();
-        await setFixerOnline(fixer._id);
+        let token;
+        try {
+            token = fixer.getSignedJwtToken();
+        } catch (jwtErr) {
+            console.error('[loginFixer] JWT sign failed:', jwtErr.message);
+            return res.status(500).json({
+                success: false,
+                message:
+                    'Token signing failed. Set JWT_SECRET and JWT_EXPIRE (e.g. 24h or 7d) on the server.',
+                code: 'JWT_CONFIG_ERROR'
+            });
+        }
 
-        const token = fixer.getSignedJwtToken();
         setAuthCookies(res, token);
+
+        try {
+            await Fixer.findByIdAndUpdate(fixer._id, { lastLogin: new Date() });
+        } catch (saveErr) {
+            console.warn('[loginFixer] lastLogin update skipped:', saveErr.message);
+        }
+
+        try {
+            await setFixerOnline(fixer._id);
+        } catch (presenceErr) {
+            console.warn('[loginFixer] presence update skipped:', presenceErr.message);
+        }
 
         const onlineFixer = await Fixer.findById(fixer._id).select('isOnline lastSeen');
 
@@ -748,6 +793,7 @@ const loginFixer = async (req, res) => {
                     phone: fixer.phone,
                     address: fixer.address,
                     serviceCategory: fixer.serviceCategory,
+                    role: 'fixer',
                     isPhoneVerified: fixer.isPhoneVerified,
                     verificationStatus: fixer.verificationStatus,
                     isOnline: onlineFixer?.isOnline ?? true,
@@ -756,12 +802,27 @@ const loginFixer = async (req, res) => {
                 token
             }
         });
-
     } catch (error) {
-        console.error('Fixer login error:', error);
+        console.error('[loginFixer] unexpected error:', error?.message, error?.stack);
+
+        const jwtRelated =
+            error?.name === 'JsonWebTokenError' ||
+            (typeof error?.message === 'string' &&
+                error.message.toLowerCase().includes('expiresin'));
+
+        if (jwtRelated) {
+            return res.status(500).json({
+                success: false,
+                message:
+                    'Token signing failed. Set JWT_EXPIRE to a valid value (e.g. 24h or 7d).',
+                code: 'JWT_CONFIG_ERROR'
+            });
+        }
+
         res.status(500).json({
             success: false,
-            message: 'Server error during fixer login',
+            message: 'Unable to complete fixer login. Please try again.',
+            code: 'LOGIN_SERVER_ERROR',
             error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }

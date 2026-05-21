@@ -99,6 +99,7 @@ const resendOtpValidation = [
 router.post('/user/signup', userRegistrationValidation, registerUser);
 router.post('/fixer/signup', fixerRegistrationValidation, registerFixer);
 router.post('/login', loginRateLimit, loginValidation, login);
+router.post('/fixer/login', loginRateLimit, loginValidation, loginFixer);
 router.post('/logout', optionalAuth, logout);
 router.get('/me', protect, getMe);
 

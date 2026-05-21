@@ -186,7 +186,14 @@ class FIXGHARApiService {
     }
 
     async loginFixer(credentials) {
-        return this.login(credentials, 'fixer');
+        try {
+            return await this.apiCall('/auth/login/fixer', 'POST', credentials);
+        } catch (err) {
+            if (err.status === 404) {
+                return this.login(credentials, 'fixer');
+            }
+            throw err;
+        }
     }
 
     async verifyOTP(otpData) {

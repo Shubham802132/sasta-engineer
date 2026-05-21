@@ -250,19 +250,21 @@ fixerSchema.index({ isOnline: 1, lastSeen: -1 });
 // Encrypt password before saving
 fixerSchema.pre('save', async function(next) {
     if (!this.isModified('password')) {
-        next();
+        return next();
     }
-    
+
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
+    return next();
 });
 
 // Sign JWT and return
 fixerSchema.methods.getSignedJwtToken = function() {
+    const expiresIn = process.env.JWT_EXPIRE || '7d';
     return jwt.sign(
         { id: this._id, role: 'fixer', serviceCategory: this.serviceCategory },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE }
+        { expiresIn }
     );
 };
 
