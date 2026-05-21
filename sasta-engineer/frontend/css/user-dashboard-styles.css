@@ -23,110 +23,6 @@
     --border-radius-lg: 20px;
 }
 
-/* Logged-in user summary */
-.user-summary-card {
-    max-width: none;
-    margin: 0 0 16px 0;
-    background: #fff;
-    border-radius: 16px;
-    padding: 14px 16px;
-    box-shadow: var(--shadow-card);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.user-summary-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    min-width: 0;
-}
-
-.user-summary-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--gradient-primary);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    font-size: 18px;
-    flex: 0 0 auto;
-}
-
-.user-summary-meta {
-    min-width: 0;
-}
-
-.user-summary-name {
-    font-weight: 900;
-    font-size: 16px;
-    color: #222;
-    line-height: 1.2;
-}
-
-.user-summary-sub {
-    font-size: 13px;
-    color: #666;
-    margin-top: 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 680px;
-}
-
-.user-summary-actions {
-    flex: 0 0 auto;
-}
-
-.user-summary-btn {
-    background: var(--gradient-primary);
-    border: none;
-    color: #fff;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.user-summary-loading,
-.user-summary-error {
-    max-width: none;
-    margin: 0 0 16px 0;
-    padding: 10px 12px;
-    border-radius: 12px;
-    font-size: 14px;
-}
-
-.user-summary-loading {
-    background: #fff7e6;
-    color: #7a4b00;
-    border: 1px solid rgba(251, 145, 6, 0.25);
-}
-
-.user-summary-error {
-    background: #ffecec;
-    color: #7a0b0b;
-    border: 1px solid rgba(244, 67, 54, 0.25);
-}
-
-@media (max-width: 768px) {
-    .user-summary-card {
-        margin-left: 12px;
-        margin-right: 12px;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .user-summary-sub {
-        max-width: 100%;
-        white-space: normal;
-    }
-}
-
 /* Services Section Styling */
 .services-section {
     background: #f8f9fa;
@@ -582,6 +478,10 @@ html, body {
     width: calc(100% - 280px);
     padding: 30px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
 }
 
 .user-dashboard .dashboard-container {
@@ -596,7 +496,8 @@ html, body {
 .user-summary-card {
     max-width: none;
     width: 100%;
-    margin: 0 0 18px 0;
+    margin: 0 0 20px 0;
+    flex-shrink: 0;
     background: white;
     border-radius: 16px;
     padding: 18px;
@@ -927,15 +828,47 @@ html, body {
     color: #9b2c24;
 }
 
-/* Header Section */
+/* Header Section — profile button stays in flex flow (overrides dashboard absolute) */
 .user-dashboard .header-section {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     align-items: center;
-    margin-top: -10px;
-    margin-bottom: 20px;
-    margin-right: 0;
-    gap: 15px;
+    align-self: stretch;
+    width: 100%;
+    margin-top: 0;
+    margin-bottom: 24px;
+    padding: 0;
+    gap: 12px;
+    position: relative;
+    z-index: 5;
+    flex-shrink: 0;
+}
+
+.user-dashboard .main-profile-button {
+    position: static;
+    top: auto;
+    right: auto;
+    z-index: auto;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.user-dashboard .show-profile-btn {
+    white-space: nowrap;
+}
+
+.user-dashboard .hero-banner {
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.user-summary-loading,
+.user-summary-error {
+    flex-shrink: 0;
 }
 
 /* Search Icon Button */
@@ -1107,13 +1040,44 @@ html, body {
     }
     
     .user-dashboard .header-section {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .user-dashboard .main-profile-button {
+        width: auto;
+    }
+
+    .user-dashboard .show-profile-btn {
+        width: auto;
+        justify-content: center;
+    }
+
+    .user-summary-card {
         flex-direction: column;
-        gap: 15px;
-        align-items: stretch;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .user-summary-actions {
+        width: 100%;
+    }
+
+    .user-summary-btn {
+        width: 100%;
+    }
+
+    .user-summary-sub {
+        max-width: 100%;
+        white-space: normal;
     }
     
     .user-dashboard .search-bar {
         max-width: none;
+        flex: 1 1 100%;
     }
     
     .user-dashboard .welcome-banner {
