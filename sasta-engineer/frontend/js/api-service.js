@@ -142,7 +142,19 @@ class FIXGHARApiService {
     }
 
     async registerFixer(fixerData) {
-        return this.apiCall('/auth/fixer/signup', 'POST', fixerData);
+        const payload = {
+            ...fixerData,
+            serviceCategory:
+                fixerData.serviceCategory || fixerData.serviceType || fixerData.service
+        };
+        try {
+            return await this.apiCall('/auth/fixer/register', 'POST', payload);
+        } catch (err) {
+            if (err.status === 404) {
+                return this.apiCall('/auth/fixer/signup', 'POST', payload);
+            }
+            throw err;
+        }
     }
 
     // Health check method for connection testing

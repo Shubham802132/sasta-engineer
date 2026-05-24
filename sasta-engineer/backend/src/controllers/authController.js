@@ -101,6 +101,109 @@ async function generateUniqueUsernameForUser(normalizedEmail) {
     return `u_${Date.now()}_${Math.floor(Math.random() * 10000)}`.slice(0, 30);
 }
 
+/** Fixer schema requires username; generate unique handle when frontend omits it. */
+async function generateUniqueUsernameForFixer(normalizedEmail) {
+    const localRaw = (normalizedEmail || '').split('@')[0] || 'fixer';
+    let base = localRaw
+        .replace(/[^a-zA-Z0-9_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+    if (!base || base.length < 3) base = 'fixer';
+    base = base.slice(0, 20);
+
+    for (let i = 0; i < 5000; i++) {
+        const candidate = (i === 0 ? base : `${base}_${i}`).slice(0, 30);
+        const exists = await Fixer.findOne({ username: candidate }).select('_id');
+        if (!exists) return candidate;
+    }
+
+    return `f_${Date.now()}_${Math.floor(Math.random() * 10000)}`.slice(0, 30);
+}
+
+const FIXER_SERVICE_CATEGORIES = [
+    'Plumbing',
+    'Electrical',
+    'Carpentry',
+    'Painting',
+    'General Repair',
+    'Multi-Service',
+    'AC Repair'
+];
+
+function resolveFixerServiceCategory(body) {
+    const raw =
+        body?.serviceCategory ||
+        body?.serviceType ||
+        body?.service ||
+        '';
+    return typeof raw === 'string' ? raw.trim() : '';
+}
+
+function handleRegistrationError(error, res, label) {
+    console.error(`${label} error.message:`, error?.message);
+    console.error(`${label} error.stack:`, error?.stack);
+    console.error(`${label} error (detail):`, {
+        name: error?.name,
+        code: error?.code,
+        errors: error?.errors ? Object.keys(error.errors) : undefined
+    });
+
+    if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern || {})[0] || 'field';
+        const value = error.keyValue?.[field];
+
+        let message = '';
+        if (field === 'email') {
+            message = 'Email already exists. Please use a different email.';
+        } else if (field === 'username') {
+            message = 'Username already exists. Please choose a different username.';
+        } else if (field === 'phone') {
+            message = 'Phone number already exists. Please use a different phone number.';
+        } else {
+            message = `${field} already exists. Please use a different ${field}.`;
+        }
+
+        return res.status(409).json({
+            success: false,
+            message,
+            field,
+            value,
+            code: 'DUPLICATE_KEY'
+        });
+    }
+
+    if (error?.name === 'ValidationError') {
+        const fieldErrors = Object.values(error.errors || {}).map((e) => ({
+            field: e.path,
+            message: e.message
+        }));
+
+        return res.status(400).json({
+            success: false,
+            message: fieldErrors[0]?.message || 'Invalid registration data',
+            code: 'VALIDATION_ERROR',
+            errors: fieldErrors
+        });
+    }
+
+    if (error?.name === 'CastError') {
+        return res.status(400).json({
+            success: false,
+            message: error.message || 'Invalid data format',
+            code: 'CAST_ERROR'
+        });
+    }
+
+    return res.status(500).json({
+        success: false,
+        message:
+            error?.message ||
+            `${label} failed due to an unexpected error.`,
+        code: 'REGISTRATION_SERVER_ERROR',
+        error: process.env.NODE_ENV === 'production' ? undefined : error.message
+    });
+}
+
 // @desc    Register User
 // @route   POST /api/auth/register/user
 // @access  Public
@@ -442,7 +545,21 @@ const registerFixer = async (req, res) => {
             });
         }
 
-        const { name, username, email, phone, password, serviceCategory, address } = req.body;
+        const { name, username, email, phone, password, address } = req.body;
+        const serviceCategory = resolveFixerServiceCategory(req.body);
+
+        if (!serviceCategory || !FIXER_SERVICE_CATEGORIES.includes(serviceCategory)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please select a valid service category',
+                field: 'serviceCategory',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        const bodyForLog = { ...req.body, serviceCategory };
+        if (bodyForLog.password) bodyForLog.password = '[REDACTED]';
+        console.log('🧾 registerFixer raw req.body:', JSON.stringify(bodyForLog));
 
         const phoneNorm = smsService.normalizeIndianToE164(phone);
         if (!phoneNorm.ok) {
@@ -454,37 +571,66 @@ const registerFixer = async (req, res) => {
             });
         }
         const phoneForSave = phoneNorm.e164;
-        console.log('📱 [OTP] register/fixer phone from client:', phone);
-        console.log('📱 [OTP] normalized E.164 before OTP/SMS:', phoneForSave);
 
-        // Check if fixer already exists
+        const normalizedEmail = normalizeEmail(email);
+        let finalUsername = normalizeUsername(username);
+        if (!finalUsername) {
+            console.log('📝 registerFixer: username omitted — generating unique username');
+            finalUsername = await generateUniqueUsernameForFixer(normalizedEmail);
+            console.log('📝 registerFixer generated username:', finalUsername);
+        }
+
+        console.log('📝 Fixer registration attempt', {
+            email: normalizedEmail,
+            username: finalUsername,
+            phone: phoneForSave,
+            serviceCategory,
+            hasAddress: !!address
+        });
+
         const existingFixer = await Fixer.findOne({
             $or: [
-                { email },
-                { username },
+                { email: normalizedEmail },
+                { username: finalUsername },
                 { phone: phoneForSave },
                 { phone: phoneForSave.replace(/^\+91/, '') }
             ]
-        });
+        }).select('_id email username phone');
 
         if (existingFixer) {
-            return res.status(400).json({
+            let field = 'email';
+            let message = 'Fixer with this email already exists';
+            if (existingFixer.username === finalUsername) {
+                field = 'username';
+                message = 'Username already exists. Please choose a different username.';
+            } else if (
+                existingFixer.phone === phoneForSave ||
+                existingFixer.phone === phoneForSave.replace(/^\+91/, '')
+            ) {
+                field = 'phone';
+                message = 'Phone number already exists. Please use a different phone number.';
+            } else if (existingFixer.email === normalizedEmail) {
+                message = 'Email already exists. Please use a different email.';
+            }
+
+            return res.status(409).json({
                 success: false,
-                message: 'Fixer with this email, username, or phone already exists'
+                message,
+                field,
+                code: 'DUPLICATE_KEY'
             });
         }
 
-        // Create/replace pending fixer registration so account is created only after OTP verification
         await PendingRegistration.deleteMany({
             userType: 'fixer',
-            $or: [{ email }, { phone: phoneForSave }]
+            $or: [{ email: normalizedEmail }, { phone: phoneForSave }]
         });
 
         const pending = await PendingRegistration.create({
             userType: 'fixer',
             name,
-            username,
-            email,
+            username: finalUsername,
+            email: normalizedEmail,
             phone: phoneForSave,
             password,
             serviceCategory,
@@ -511,7 +657,9 @@ const registerFixer = async (req, res) => {
             await PendingRegistration.deleteOne({ _id: pending._id });
             return res.status(502).json({
                 success: false,
-                message: smsResult.message || 'SMS provider error.',
+                message:
+                    smsResult.message ||
+                    'SMS could not be sent. Set SMS_TEST_MODE=true for testing or configure Twilio/MSG91.',
                 code: smsResult.code || 'SMS_PROVIDER_ERROR',
                 otpDelivery
             });
@@ -543,39 +691,8 @@ const registerFixer = async (req, res) => {
             message: fixerMsg,
             data: fixerResponseData
         });
-
     } catch (error) {
-        console.error('Fixer registration error:', error);
-        
-        // Handle duplicate key error
-        if (error.code === 11000) {
-            const field = Object.keys(error.keyPattern)[0];
-            const value = error.keyValue[field];
-            
-            let message = '';
-            if (field === 'email') {
-                message = 'Email already exists. Please use a different email.';
-            } else if (field === 'username') {
-                message = 'Username already exists. Please choose a different username.';
-            } else if (field === 'phone') {
-                message = 'Phone number already exists. Please use a different phone number.';
-            } else {
-                message = `${field} already exists. Please use a different ${field}.`;
-            }
-            
-            return res.status(400).json({
-                success: false,
-                message: message,
-                field: field,
-                value: value
-            });
-        }
-        
-        res.status(500).json({
-            success: false,
-            message: 'Server error during fixer registration',
-            error: process.env.NODE_ENV === 'production' ? undefined : error.message
-        });
+        return handleRegistrationError(error, res, 'Fixer registration');
     }
 };
 
@@ -931,13 +1048,18 @@ const verifyOTP = async (req, res) => {
                     });
                 }
 
+                let fixerUsername = pending.username;
+                if (!fixerUsername) {
+                    fixerUsername = await generateUniqueUsernameForFixer(pending.email);
+                }
+
                 const fixer = await Fixer.create({
                     name: pending.name,
-                    username: pending.username,
+                    username: fixerUsername,
                     email: pending.email,
                     phone: pending.phone,
                     password: pending.password,
-                    serviceCategory: pending.serviceCategory,
+                    serviceCategory: pending.serviceCategory || 'General Repair',
                     address: pending.address,
                     isPhoneVerified: true
                 });
@@ -959,10 +1081,36 @@ const verifyOTP = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('OTP verification error:', error);
+        console.error('[verifyOTP] error:', error?.message, error?.stack);
+
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0] || 'field';
+            return res.status(409).json({
+                success: false,
+                message: `Account already exists for this ${field}. Please log in instead.`,
+                field,
+                code: 'DUPLICATE_KEY'
+            });
+        }
+
+        if (error?.name === 'ValidationError') {
+            const fieldErrors = Object.values(error.errors || {}).map((e) => ({
+                field: e.path,
+                message: e.message
+            }));
+            return res.status(400).json({
+                success: false,
+                message: fieldErrors[0]?.message || 'Invalid account data',
+                code: 'VALIDATION_ERROR',
+                errors: fieldErrors
+            });
+        }
+
         res.status(500).json({
             success: false,
-            message: 'Server error during OTP verification'
+            message: 'Unable to verify OTP. Please try again or sign up again.',
+            code: 'OTP_VERIFY_ERROR',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }
 };

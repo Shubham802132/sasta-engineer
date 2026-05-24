@@ -1400,23 +1400,27 @@
                 }
                 // Get form data
                 const usernameRaw = document.getElementById('fixerUsername').value;
+                const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
                 const formData = {
-                    name: document.getElementById('fixerName').value,
-                    email: document.getElementById('fixerEmail').value,
-                    phone: document.getElementById('fixerPhone').value,
+                    name: document.getElementById('fixerName').value.trim(),
+                    email: document.getElementById('fixerEmail').value.trim(),
+                    phone: document.getElementById('fixerPhone').value.trim(),
                     password: document.getElementById('fixerPassword').value,
                     serviceCategory: document.getElementById('fixerServiceSelect').value,
                     address: {
-                        street: document.getElementById('fixerStreet').value,
-                        city: document.getElementById('fixerCity').value,
-                        state: document.getElementById('fixerState').value,
-                        zipCode: document.getElementById('fixerZipCode').value
+                        street: document.getElementById('fixerStreet').value.trim(),
+                        city: document.getElementById('fixerCity').value.trim(),
+                        state: document.getElementById('fixerState').value.trim(),
+                        zipCode: document.getElementById('fixerZipCode').value.trim()
                     }
                 };
 
-                // Only include username if non-empty
-                const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
                 if (username) formData.username = username;
+
+                if (!formData.serviceCategory) {
+                    showModernAlert('Validation failed', 'Please select a service category.', 'error');
+                    return;
+                }
 
                 // Validate passwords match
                 const confirmPassword = document.getElementById('fixerConfirmPassword').value;
@@ -1476,6 +1480,8 @@
                 } else if (error.code === 'VALIDATION_ERROR') {
                     const field = error.field ? ` (${error.field})` : '';
                     showModernAlert('Validation failed', `${error.message}${field}`, 'error');
+                } else if (error.code === 'DUPLICATE_KEY') {
+                    showModernAlert('Already registered', error.message, 'error');
                 } else if (error.code === 'SMS_PROVIDER_ERROR' || error.code === 'SMS_NOT_CONFIGURED') {
                     showModernAlert('SMS provider error', error.message, 'error');
                 } else {

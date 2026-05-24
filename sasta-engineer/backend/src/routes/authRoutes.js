@@ -47,6 +47,7 @@ const userRegistrationValidation = [
 const fixerRegistrationValidation = [
     body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
     body('username')
+        .optional({ values: 'falsy' })
         .trim()
         .isLength({ min: 3, max: 30 })
         .matches(/^[a-zA-Z0-9_]+$/)
@@ -65,9 +66,9 @@ const fixerRegistrationValidation = [
         .withMessage(
             'Password must include uppercase, lowercase, a number, and a special character (@$!%*?&)'
         ),
-    body('serviceCategory')
-        .isIn(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'General Repair', 'Multi-Service', 'AC Repair'])
-        .withMessage('Please select a valid service category'),
+    body('serviceCategory').optional({ values: 'falsy' }),
+    body('service').optional({ values: 'falsy' }),
+    body('serviceType').optional({ values: 'falsy' }),
     body('address.street').trim().notEmpty().withMessage('Street address is required'),
     body('address.city').trim().notEmpty().withMessage('City is required'),
     body('address.state').trim().notEmpty().withMessage('State is required'),
@@ -98,6 +99,7 @@ const resendOtpValidation = [
 // Production routes
 router.post('/user/signup', userRegistrationValidation, registerUser);
 router.post('/fixer/signup', fixerRegistrationValidation, registerFixer);
+router.post('/fixer/register', fixerRegistrationValidation, registerFixer);
 router.post('/login', loginRateLimit, loginValidation, login);
 router.post('/fixer/login', loginRateLimit, loginValidation, loginFixer);
 router.post('/logout', optionalAuth, logout);
