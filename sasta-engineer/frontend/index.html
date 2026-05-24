@@ -1194,17 +1194,55 @@
             }, 1000);
         }
 
-        function persistFixerAuthSession(fixerData, token, persist = 'local') {
+        function getDashboardUrlForRole(role) {
+            const dashboards = window.FIXGHAR_CONFIG?.frontend?.dashboards;
+            if (role === 'fixer') {
+                return dashboards?.fixer || '/fixer-dashboard.html';
+            }
+            return dashboards?.user || '/user-dashboard.html';
+        }
+
+        function parseLoginResponse(response, selectedRole) {
+            const payload = response?.data || {};
+            const token = response?.token || payload.token;
+            const userData =
+                response?.user ||
+                payload.user ||
+                payload.fixer ||
+                (selectedRole === 'fixer' ? payload.fixer : payload.user);
+            const role = String(userData?.role || selectedRole || 'user').toLowerCase();
+            const redirectUrl =
+                response?.redirectUrl ||
+                payload.redirectUrl ||
+                getDashboardUrlForRole(role);
+            const authStatus = response?.authStatus || payload.authStatus;
+
+            console.log('🔐 [login] parsed response:', {
+                role,
+                redirectUrl,
+                authStatus,
+                hasToken: !!token,
+                hasUser: !!userData
+            });
+
+            return { token, userData, role, redirectUrl, authStatus };
+        }
+
+        function persistAuthSession(userData, token, role, persist = 'local') {
             if (window.stateService && typeof window.stateService.setAuthenticatedUser === 'function') {
-                window.stateService.setAuthenticatedUser(fixerData, token, 'fixer', persist);
+                window.stateService.setAuthenticatedUser(userData, token, role, persist);
             } else {
                 const storage = persist === 'session' ? sessionStorage : localStorage;
                 storage.setItem('fixghar_persist', persist);
                 storage.setItem('fixghar_token', token);
-                storage.setItem('fixghar_user_data', JSON.stringify(fixerData));
-                storage.setItem('fixghar_user_type', 'fixer');
+                storage.setItem('fixghar_user_data', JSON.stringify(userData));
+                storage.setItem('fixghar_user_type', role);
             }
-            localStorage.setItem('userName', fixerData?.name || 'Fixer');
+            localStorage.setItem('userName', userData?.name || (role === 'fixer' ? 'Fixer' : 'User'));
+        }
+
+        function persistFixerAuthSession(fixerData, token, persist = 'local') {
+            persistAuthSession(fixerData, token, 'fixer', persist);
         }
 
         // OTP Verification Handler
@@ -1245,7 +1283,7 @@
                     if (userType === 'fixer') {
                         const token = response?.data?.token;
                         const fixerData = response?.data?.fixer;
-                        const redirectUrl = response?.data?.redirectUrl || 'pages/fixer-dashboard.html';
+                        const redirectUrl = response?.data?.redirectUrl || response?.redirectUrl || getDashboardUrlForRole('fixer');
                         const authStatus = response?.data?.authStatus;
 
                         if (token && fixerData && authStatus === 'authenticated') {
@@ -1622,58 +1660,45 @@
                 
                 if (response.success) {
                     console.log('✅ Login successful:', response);
-                    
-                    // Persist auth session in a single consistent place
-                    const token = response?.data?.token;
-                    const userData =
-                        selectedRole === 'fixer' ? response?.data?.fixer : response?.data?.user;
+
+                    const { token, userData, role, redirectUrl, authStatus } = parseLoginResponse(
+                        response,
+                        selectedRole
+                    );
 
                     if (!token || !userData) {
                         throw new Error('Login response missing token or user data');
                     }
 
-                    // Prefer stateService if available (handles localStorage/sessionStorage + migrations)
-                    if (window.stateService && typeof window.stateService.setAuthenticatedUser === 'function') {
-                        window.stateService.setAuthenticatedUser(userData, token, selectedRole, persist);
-                    } else {
-                        const storage = persist === 'session' ? sessionStorage : localStorage;
-                        storage.setItem('fixghar_persist', persist);
-                        storage.setItem('fixghar_token', token);
-                        storage.setItem('fixghar_user_data', JSON.stringify(userData));
-                        storage.setItem('fixghar_user_type', selectedRole);
+                    if (!redirectUrl) {
+                        throw new Error('Login response missing redirectUrl');
                     }
 
-                    // Debug logs for auth persistence
+                    persistAuthSession(userData, token, role, persist);
+
                     console.log('🔐 [login] persist:', persist);
+                    console.log('🔐 [login] redirectUrl:', redirectUrl);
+                    console.log('🔐 [login] role:', role);
+                    console.log('🔐 [login] authStatus:', authStatus || '[unset]');
                     console.log('🔐 [login] token(local):', localStorage.getItem('fixghar_token') ? '[set]' : '[empty]');
                     console.log('🔐 [login] token(session):', sessionStorage.getItem('fixghar_token') ? '[set]' : '[empty]');
                     console.log('🔐 [login] userType(local):', localStorage.getItem('fixghar_user_type') || '[empty]');
                     console.log('🔐 [login] userType(session):', sessionStorage.getItem('fixghar_user_type') || '[empty]');
 
-                    // Backward-compat display name key (optional)
-                    localStorage.setItem('userName', userData.name || (selectedRole === 'fixer' ? 'Fixer' : 'User'));
-                    
-                    // Show success message
-                    const roleText = selectedRole === 'fixer' ? 'Fixer' : 'User';
-                    showModernAlert('Login Successful!', `Welcome back, ${roleText}! Redirecting to ${roleText} dashboard...`, 'success');
-                    
-                    // Clear form
+                    const roleText = role === 'fixer' ? 'Fixer' : 'User';
+                    showModernAlert(
+                        'Login Successful!',
+                        `Welcome back, ${roleText}! Redirecting to dashboard...`,
+                        'success'
+                    );
+
                     document.getElementById('loginForm').reset();
-                    
-                    // Close modal
                     closeLoginModal();
-                    
-                    // Redirect to appropriate dashboard
+
                     setTimeout(() => {
-                        if (selectedRole === 'fixer') {
-                            console.log('🔧 Redirecting to fixer dashboard');
-                            window.location.href = 'pages/fixer-dashboard.html';
-                        } else {
-                            console.log('👤 Redirecting to user dashboard');
-                            window.location.href = 'pages/user-dashboard.html';
-                        }
-                    }, 1000);
-                    
+                        console.log('➡️ [login] navigating to:', redirectUrl);
+                        window.location.href = redirectUrl;
+                    }, 800);
                 } else {
                     console.error('❌ Login failed:', response);
                     showModernAlert('Login Failed', response.message || 'Invalid credentials. Please check your email and password.', 'error');
@@ -1692,6 +1717,10 @@
                     errorMessage += 'Request timed out. Please check your internet connection and try again.';
                 } else if (error.message.includes('Network error')) {
                     errorMessage += 'Cannot connect to server. Please ensure backend is running.';
+                } else if (error.message.includes('missing redirectUrl')) {
+                    errorMessage += 'Server did not return a dashboard redirect URL. Please try again.';
+                } else if (error.message.includes('missing token')) {
+                    errorMessage += 'Authentication token was not returned by the server. Please try again.';
                 } else if (error.message.includes('Invalid credentials')) {
                     errorMessage += 'Invalid email or password. Please check your credentials.';
                 } else {
@@ -1797,9 +1826,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('login') === 'fixer') {
-                const fixerRole = document.getElementById('loginFixerRole');
-                if (fixerRole) fixerRole.checked = true;
+            const loginRole = params.get('login');
+            if (loginRole === 'fixer' || loginRole === 'user') {
+                if (loginRole === 'fixer') {
+                    const fixerRole = document.getElementById('loginFixerRole');
+                    if (fixerRole) fixerRole.checked = true;
+                } else {
+                    const userRole = document.getElementById('loginUserRole');
+                    if (userRole) userRole.checked = true;
+                }
                 if (typeof openLoginModal === 'function') {
                     openLoginModal();
                 }

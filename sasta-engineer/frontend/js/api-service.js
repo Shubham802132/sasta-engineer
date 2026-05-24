@@ -100,9 +100,13 @@ class FIXGHARApiService {
             }
 
             return {
-                success: true,
+                success: result.success !== false,
                 data: result.data || result,
                 message: result.message,
+                token: result.token || result.data?.token,
+                user: result.user || result.data?.user || result.data?.fixer,
+                redirectUrl: result.redirectUrl || result.data?.redirectUrl,
+                authStatus: result.authStatus || result.data?.authStatus,
                 status: response.status
             };
 
@@ -194,7 +198,14 @@ class FIXGHARApiService {
     }
 
     async loginUser(credentials) {
-        return this.login(credentials, 'user');
+        try {
+            return await this.apiCall('/auth/login/user', 'POST', credentials);
+        } catch (err) {
+            if (err.status === 404) {
+                return this.login(credentials, 'user');
+            }
+            throw err;
+        }
     }
 
     async loginFixer(credentials) {

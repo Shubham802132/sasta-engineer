@@ -985,13 +985,15 @@
                 }
             };
 
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', async function () {
                 // Auth guard: block dashboard if not logged in (or wrong role)
                 const { token, userType } = getAuthSnapshot();
                 if (!token || userType !== 'user') {
-                    redirectToLogin();
+                    redirectToLogin(!token ? 'missing token' : `wrong role: ${userType}`);
                     return;
                 }
+
+                await validateSessionWithMe();
 
                 // Show basic cached user instantly (if available)
                 try {
@@ -1071,8 +1073,27 @@
 
         function redirectToLogin(reason) {
             console.warn('🔒 [auth] redirectToLogin reason:', reason);
-            // Do NOT clear storage here (prevents redirect loops on temporary failures)
-            window.location.replace('../index.html');
+            window.location.replace('../index.html?login=user');
+        }
+
+        async function validateSessionWithMe() {
+            try {
+                const apiService = window.apiService || new FIXGHARApiService();
+                const meRes = await apiService.getCurrentUser();
+                const meUser = meRes?.user || meRes?.data?.user || meRes?.data?.data?.user;
+                console.log('🔐 [/auth/me] user-dashboard response:', {
+                    role: meUser?.role,
+                    authStatus: meRes?.authStatus || meRes?.data?.authStatus
+                });
+                if (!meUser || String(meUser.role).toLowerCase() !== 'user') {
+                    redirectToLogin('role mismatch from /auth/me');
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.warn('🔐 [/auth/me] user-dashboard failed:', e?.message || e);
+                return false;
+            }
         }
 
         function setUserSummaryLoading(isLoading) {

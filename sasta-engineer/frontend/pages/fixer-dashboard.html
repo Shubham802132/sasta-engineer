@@ -2181,7 +2181,7 @@
         }
 
         // Initialize dashboard when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Fixer Dashboard DOM loaded');
             
             // Check authentication
@@ -2199,9 +2199,24 @@
             }
             
             if (userType !== 'fixer') {
-                // Wrong role: send back to login
                 window.location.replace('../index.html?login=fixer');
                 return;
+            }
+
+            try {
+                const apiService = window.apiService || new FIXGHARApiService();
+                const meRes = await apiService.getCurrentUser();
+                const meUser = meRes?.user || meRes?.data?.user || meRes?.data?.data?.user;
+                console.log('🔐 [/auth/me] fixer-dashboard response:', {
+                    role: meUser?.role,
+                    authStatus: meRes?.authStatus || meRes?.data?.authStatus
+                });
+                if (!meUser || String(meUser.role).toLowerCase() !== 'fixer') {
+                    window.location.replace('../index.html?login=fixer');
+                    return;
+                }
+            } catch (e) {
+                console.warn('🔐 [/auth/me] fixer-dashboard failed (keeping cached session):', e?.message || e);
             }
 
             // Load fixer summary (cached first, then API)

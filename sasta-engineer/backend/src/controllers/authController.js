@@ -62,6 +62,36 @@ function clearAuthCookies(res) {
     res.clearCookie('refreshToken', base);
 }
 
+function getDashboardRedirectUrl(role) {
+    return role === 'fixer' ? '/fixer-dashboard.html' : '/user-dashboard.html';
+}
+
+function sendLoginSuccessResponse(res, { profile, role, token, message, extras = {} }) {
+    const redirectUrl = getDashboardRedirectUrl(role);
+    const data = {
+        user: profile,
+        token,
+        redirectUrl,
+        authStatus: 'authenticated',
+        ...extras
+    };
+    if (role === 'fixer') {
+        data.fixer = profile;
+    }
+
+    console.log('[login] role:', role, 'redirectUrl:', redirectUrl, 'jwtCookie: set');
+
+    return res.status(200).json({
+        success: true,
+        message: message || 'Login successful',
+        user: profile,
+        token,
+        redirectUrl,
+        authStatus: 'authenticated',
+        data
+    });
+}
+
 function ensureAuthPrereqs(res) {
     if (!process.env.JWT_SECRET) {
         res.status(500).json({
@@ -807,24 +837,22 @@ const loginUser = async (req, res) => {
 
         setAuthCookies(res, token, refreshToken);
 
-        res.status(200).json({
-            success: true,
-            message: 'User logged in successfully',
-            data: {
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    username: user.username,
-                    phone: user.phone,
-                    address: user.address,
-                    isPhoneVerified: user.isPhoneVerified,
-                    isEmailVerified: user.isEmailVerified,
-                    role: user.role
-                },
-                token,
-                expiresIn: process.env.JWT_EXPIRE
-            }
+        return sendLoginSuccessResponse(res, {
+            profile: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                username: user.username,
+                phone: user.phone,
+                address: user.address,
+                isPhoneVerified: user.isPhoneVerified,
+                isEmailVerified: user.isEmailVerified,
+                role: user.role || 'user'
+            },
+            role: 'user',
+            token,
+            message: 'Login successful',
+            extras: { expiresIn: process.env.JWT_EXPIRE }
         });
 
     } catch (error) {
@@ -933,26 +961,24 @@ const loginFixer = async (req, res) => {
 
         const onlineFixer = await Fixer.findById(fixer._id).select('isOnline lastSeen');
 
-        res.status(200).json({
-            success: true,
-            message: 'Fixer logged in successfully',
-            data: {
-                fixer: {
-                    id: fixer._id,
-                    name: fixer.name,
-                    email: fixer.email,
-                    username: fixer.username,
-                    phone: fixer.phone,
-                    address: fixer.address,
-                    serviceCategory: fixer.serviceCategory,
-                    role: 'fixer',
-                    isPhoneVerified: fixer.isPhoneVerified,
-                    verificationStatus: fixer.verificationStatus,
-                    isOnline: onlineFixer?.isOnline ?? true,
-                    lastSeen: onlineFixer?.lastSeen
-                },
-                token
-            }
+        return sendLoginSuccessResponse(res, {
+            profile: {
+                id: fixer._id,
+                name: fixer.name,
+                email: fixer.email,
+                username: fixer.username,
+                phone: fixer.phone,
+                address: fixer.address,
+                serviceCategory: fixer.serviceCategory,
+                role: 'fixer',
+                isPhoneVerified: fixer.isPhoneVerified,
+                verificationStatus: fixer.verificationStatus,
+                isOnline: onlineFixer?.isOnline ?? true,
+                lastSeen: onlineFixer?.lastSeen
+            },
+            role: 'fixer',
+            token,
+            message: 'Login successful'
         });
     } catch (error) {
         console.error('[loginFixer] unexpected error:', error?.message, error?.stack);
@@ -1160,7 +1186,7 @@ const verifyOTP = async (req, res) => {
                 message: 'Registration successful! Redirecting to dashboard...',
                 data: {
                     authStatus: 'authenticated',
-                    redirectUrl: 'pages/fixer-dashboard.html',
+                    redirectUrl: '/fixer-dashboard.html',
                     fixer: {
                         id: verifiedFixer._id,
                         name: verifiedFixer.name,
@@ -1378,29 +1404,34 @@ const getMe = async (req, res) => {
             });
         }
 
+        const role = req.user.role === 'fixer' ? 'fixer' : 'user';
+        const profile = {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            username: user.username,
+            phone: user.phone,
+            profilePicture: user.profilePicture || '',
+            role,
+            isPhoneVerified: user.isPhoneVerified,
+            address: user.address,
+            createdAt: user.createdAt,
+            ...(role === 'fixer' && {
+                serviceCategory: user.serviceCategory,
+                verificationStatus: user.verificationStatus,
+                experience: user.experience,
+                hourlyRate: user.hourlyRate,
+                availability: user.availability
+            })
+        };
+
+        console.log('[getMe] role:', role, 'userId:', String(user._id));
+
         res.status(200).json({
             success: true,
-            data: {
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    username: user.username,
-                    phone: user.phone,
-                    profilePicture: user.profilePicture || '',
-                    role: req.user.role,
-                    isPhoneVerified: user.isPhoneVerified,
-                    address: user.address,
-                    createdAt: user.createdAt,
-                    ...(req.user.role === 'fixer' && {
-                        serviceCategory: user.serviceCategory,
-                        verificationStatus: user.verificationStatus,
-                        experience: user.experience,
-                        hourlyRate: user.hourlyRate,
-                        availability: user.availability
-                    })
-                }
-            }
+            authStatus: 'authenticated',
+            user: profile,
+            data: { user: profile }
         });
 
     } catch (error) {

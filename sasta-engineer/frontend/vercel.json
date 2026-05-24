@@ -3,6 +3,8 @@
   "name": "fixghar-frontend",
   "builds": [{ "src": "**/*", "use": "@vercel/static" }],
   "routes": [
+    { "src": "/user-dashboard.html", "dest": "/pages/user-dashboard.html" },
+    { "src": "/fixer-dashboard.html", "dest": "/pages/fixer-dashboard.html" },
     { "src": "/pages/(.*)", "dest": "/pages/$1" },
     { "src": "/(.*)", "dest": "/$1" }
   ]

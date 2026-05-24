@@ -22,6 +22,10 @@ const FRONTEND_CONFIG = {
     },
     frontend: {
         baseURL: isLocal ? 'http://localhost:3030' : window.location?.origin || '',
+        dashboards: {
+            user: '/user-dashboard.html',
+            fixer: '/fixer-dashboard.html'
+        },
         features: {
             enableOTP: true,
             enableFileUpload: true
