@@ -2194,13 +2194,13 @@
                 localStorage.getItem('fixghar_token') || sessionStorage.getItem('fixghar_token');
             
             if (!token) {
-                window.location.replace('../index.html');
+                window.location.replace('../index.html?login=fixer');
                 return;
             }
             
             if (userType !== 'fixer') {
                 // Wrong role: send back to login
-                window.location.replace('../index.html');
+                window.location.replace('../index.html?login=fixer');
                 return;
             }
 

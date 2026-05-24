@@ -1071,9 +1071,15 @@ const verifyOTP = async (req, res) => {
                 console.log('✅ [OTP] User created after OTP verification:', String(user._id));
             }
         } else if (userType === 'fixer') {
+            let verifiedFixer = null;
+
             const existing = await Fixer.findById(otpRecord.userId).select('_id');
             if (existing) {
-                await Fixer.findByIdAndUpdate(otpRecord.userId, { isPhoneVerified: true });
+                verifiedFixer = await Fixer.findByIdAndUpdate(
+                    otpRecord.userId,
+                    { isPhoneVerified: true },
+                    { new: true }
+                );
             } else {
                 const pending = await PendingRegistration.findById(otpRecord.userId).select('+password');
                 if (!pending || pending.userType !== 'fixer') {
@@ -1089,7 +1095,7 @@ const verifyOTP = async (req, res) => {
                     fixerUsername = await generateUniqueUsernameForFixer(pending.email);
                 }
 
-                const fixer = await Fixer.create({
+                verifiedFixer = await Fixer.create({
                     name: pending.name,
                     username: fixerUsername,
                     email: pending.email,
@@ -1107,8 +1113,71 @@ const verifyOTP = async (req, res) => {
                     type: 'phone_verification'
                 });
 
-                console.log('✅ [OTP] Fixer created after OTP verification:', String(fixer._id));
+                console.log('✅ [OTP] Fixer created after OTP verification:', String(verifiedFixer._id));
             }
+
+            if (!verifiedFixer) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Unable to complete fixer verification. Please try again.',
+                    code: 'FIXER_VERIFY_ERROR'
+                });
+            }
+
+            if (!ensureAuthPrereqs(res)) return;
+
+            let token;
+            try {
+                token = verifiedFixer.getSignedJwtToken();
+            } catch (jwtErr) {
+                console.error('[verifyOTP] fixer JWT sign failed:', jwtErr.message);
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        'Token signing failed. Set JWT_SECRET and JWT_EXPIRE (e.g. 24h or 7d) on the server.',
+                    code: 'JWT_CONFIG_ERROR'
+                });
+            }
+
+            setAuthCookies(res, token);
+
+            try {
+                await Fixer.findByIdAndUpdate(verifiedFixer._id, { lastLogin: new Date() });
+            } catch (saveErr) {
+                console.warn('[verifyOTP] fixer lastLogin update skipped:', saveErr.message);
+            }
+
+            try {
+                await setFixerOnline(verifiedFixer._id);
+            } catch (presenceErr) {
+                console.warn('[verifyOTP] fixer presence update skipped:', presenceErr.message);
+            }
+
+            const onlineFixer = await Fixer.findById(verifiedFixer._id).select('isOnline lastSeen');
+
+            return res.status(200).json({
+                success: true,
+                message: 'Registration successful! Redirecting to dashboard...',
+                data: {
+                    authStatus: 'authenticated',
+                    redirectUrl: 'pages/fixer-dashboard.html',
+                    fixer: {
+                        id: verifiedFixer._id,
+                        name: verifiedFixer.name,
+                        email: verifiedFixer.email,
+                        username: verifiedFixer.username,
+                        phone: verifiedFixer.phone,
+                        address: verifiedFixer.address,
+                        serviceCategory: verifiedFixer.serviceCategory,
+                        role: 'fixer',
+                        isPhoneVerified: verifiedFixer.isPhoneVerified,
+                        verificationStatus: verifiedFixer.verificationStatus,
+                        isOnline: onlineFixer?.isOnline ?? true,
+                        lastSeen: onlineFixer?.lastSeen
+                    },
+                    token
+                }
+            });
         }
 
         res.status(200).json({

@@ -5,6 +5,9 @@ const {
     validateMsg91Config,
     validateMsg91ForOtpSend,
     logDevOtpConsole,
+    logMsg91Response,
+    sanitizeMsg91ForLog,
+    fetchMsg91Balance,
     isPlaceholderAuthKey
 } = require('../config/msg91');
 
@@ -225,23 +228,33 @@ class SMSService {
 
         const cfg = preCheck.cfg;
 
+        const balance = await fetchMsg91Balance(cfg.route);
+        if (balance != null && balance <= 0) {
+            console.error('❌ [MSG91] SMS balance is 0 — recharge MSG91 wallet to deliver OTP SMS.');
+            return {
+                attempted: true,
+                ok: false,
+                provider: 'msg91',
+                code: 'MSG91_INSUFFICIENT_BALANCE',
+                message:
+                    'MSG91 SMS balance is 0. OTP was not sent to your phone. Recharge your MSG91 wallet and try again.'
+            };
+        }
+
         const params = new URLSearchParams({
             template_id: cfg.templateId,
             mobile: String(mobile91),
             otp: String(otp),
             otp_length: '6',
-            otp_expiry: '10',
-            sender: cfg.senderId,
-            route: cfg.route
+            otp_expiry: '10'
         });
 
         const url = `${cfg.otpUrl}?${params.toString()}`;
 
         console.log('📤 [MSG91] POST', url.replace(String(otp), '[redacted]'), {
-            sender: cfg.senderId,
-            route: cfg.route,
             template_id: cfg.templateId,
-            mobile: mobile91
+            mobile: mobile91,
+            balance: balance != null ? balance : '[unknown]'
         });
 
         const response = await axios.post(
@@ -258,8 +271,7 @@ class SMSService {
             }
         );
 
-        console.log('📥 [MSG91] HTTP status:', response.status);
-        console.log('📥 [MSG91] Response:', JSON.stringify(response.data || {}, null, 2));
+        logMsg91Response('OTP API', response.status, response.data);
 
         const data = response.data || {};
         const httpOk = response.status >= 200 && response.status < 300;
@@ -277,7 +289,7 @@ class SMSService {
         }
 
         const providerMessage = data.message || data.error || `MSG91 HTTP ${response.status}`;
-        console.error('❌ [MSG91] Delivery failed:', providerMessage, data);
+        console.error('❌ [MSG91] Delivery failed:', providerMessage, sanitizeMsg91ForLog(data));
 
         return {
             ok: false,
@@ -324,9 +336,7 @@ class SMSService {
             validateStatus: () => true
         });
 
-        console.log('📥 [MSG91 FLOW] HTTP status:', response.status);
-        console.log('MSG91 RESPONSE:', response.data);
-        console.log('📥 [MSG91 FLOW] Body:', JSON.stringify(response.data || {}, null, 2));
+        logMsg91Response('FLOW API', response.status, response.data);
 
         const data = response.data || {};
         const httpOk = response.status >= 200 && response.status < 300;
@@ -563,7 +573,10 @@ class SMSService {
         } catch (err) {
             console.error('❌ [OTP SMS] MSG91 exception:', err.message);
             if (err.response?.data) {
-                console.error('❌ [OTP SMS] MSG91 error body:', JSON.stringify(err.response.data));
+                console.error(
+                    '❌ [OTP SMS] MSG91 error body:',
+                    JSON.stringify(sanitizeMsg91ForLog(err.response.data))
+                );
             }
         }
 

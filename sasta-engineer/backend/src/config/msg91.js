@@ -3,6 +3,8 @@
  * Never hardcode secrets. Non-fatal startup validation; clear errors at send time.
  */
 
+const axios = require('axios');
+
 function isDevEnvironment() {
     return (process.env.NODE_ENV || 'development') !== 'production';
 }
@@ -25,9 +27,20 @@ function isPlaceholderAuthKey(key) {
     );
 }
 
+/** Strip accidental "MSG91_TEMPLATE_ID=..." prefix from malformed .env values. */
+function normalizeTemplateId(raw) {
+    let t = (raw || '').trim();
+    const lower = t.toLowerCase();
+    const prefix = 'msg91_template_id=';
+    if (lower.startsWith(prefix)) {
+        t = t.slice(prefix.length).trim();
+    }
+    return t;
+}
+
 function isPlaceholderTemplateId(templateId) {
     if (!templateId || typeof templateId !== 'string') return true;
-    const t = templateId.trim().toLowerCase();
+    const t = normalizeTemplateId(templateId).toLowerCase();
     return (
         t === '' ||
         t === 'pending' ||
@@ -47,7 +60,7 @@ function isTemplatePending(templateId, templateStatus) {
 function getMsg91Config() {
     return {
         authKey: (process.env.MSG91_AUTH_KEY || '').trim(),
-        templateId: (process.env.MSG91_TEMPLATE_ID || '').trim(),
+        templateId: normalizeTemplateId(process.env.MSG91_TEMPLATE_ID),
         templateStatus: (process.env.MSG91_TEMPLATE_STATUS || '').trim(),
         senderId: (
             process.env.MSG91_SENDER_ID ||
@@ -122,6 +135,39 @@ function validateMsg91ForOtpSend() {
     }
 
     return { ok: true, cfg };
+}
+
+/** Fetch MSG91 SMS credits for route (returns null if check fails). */
+async function fetchMsg91Balance(route = '4') {
+    const cfg = getMsg91Config();
+    if (isPlaceholderAuthKey(cfg.authKey)) return null;
+
+    try {
+        const response = await axios.get('https://control.msg91.com/api/balance.php', {
+            params: { type: String(route || cfg.route || '4'), authkey: cfg.authKey },
+            timeout: 12000,
+            validateStatus: () => true
+        });
+        const raw = response.data;
+        const n = Number(typeof raw === 'object' ? raw?.balance ?? raw?.msg : raw);
+        return Number.isFinite(n) ? n : null;
+    } catch {
+        return null;
+    }
+}
+
+async function warnMsg91BalanceIfLow() {
+    const balance = await fetchMsg91Balance();
+    if (balance == null) return { balance: null, low: false };
+
+    console.log('📲 [MSG91] SMS balance (route 4):', balance);
+    if (balance <= 0) {
+        console.warn(
+            '⚠️ [MSG91] SMS balance is 0 — OTP API may return success but no SMS will reach handsets. Recharge MSG91 wallet.'
+        );
+        return { balance, low: true };
+    }
+    return { balance, low: false };
 }
 
 function validateMsg91Config() {
@@ -222,15 +268,59 @@ function logDevOtpConsole(otp, context = 'OTP') {
     console.log(`🧪 [${context}] Development OTP (console only, not sent in API response): ${otp}`);
 }
 
+const MSG91_LOG_SECRET_KEYS = new Set([
+    'authkey',
+    'auth_key',
+    'authorization',
+    'otp',
+    'password',
+    'token',
+    'secret'
+]);
+
+/** Redact secrets from MSG91 payloads before logging (never log auth keys or OTP). */
+function sanitizeMsg91ForLog(value, depth = 0) {
+    if (value == null || depth > 8) return value;
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+        return value.map((item) => sanitizeMsg91ForLog(item, depth + 1));
+    }
+    if (typeof value !== 'object') return value;
+
+    const out = {};
+    for (const [key, raw] of Object.entries(value)) {
+        const k = key.toLowerCase();
+        if (MSG91_LOG_SECRET_KEYS.has(k)) {
+            out[key] = '[redacted]';
+        } else if (typeof raw === 'object' && raw !== null) {
+            out[key] = sanitizeMsg91ForLog(raw, depth + 1);
+        } else {
+            out[key] = raw;
+        }
+    }
+    return out;
+}
+
+function logMsg91Response(label, httpStatus, data) {
+    const safe = sanitizeMsg91ForLog(data || {});
+    console.log(`📥 [MSG91] ${label} HTTP status:`, httpStatus);
+    console.log(`📥 [MSG91] ${label} Response:`, JSON.stringify(safe, null, 2));
+}
+
 module.exports = {
     getMsg91Config,
     validateMsg91Config,
     validateMsg91ForOtpSend,
     logMsg91StartupValidation,
     logDevOtpConsole,
+    logMsg91Response,
+    sanitizeMsg91ForLog,
+    fetchMsg91Balance,
+    warnMsg91BalanceIfLow,
     isDevEnvironment,
     isPlaceholderAuthKey,
     isPlaceholderTemplateId,
     isTemplatePending,
-    maskSecret
+    maskSecret,
+    normalizeTemplateId
 };

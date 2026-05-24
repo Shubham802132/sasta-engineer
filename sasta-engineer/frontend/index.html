@@ -1133,6 +1133,9 @@
                     </div>
                 </div>
             `;
+            modal.dataset.userType = userType;
+            modal.dataset.phone = phone;
+
             document.body.appendChild(modal);
             modal.style.display = 'block';
             
@@ -1143,6 +1146,11 @@
             document.getElementById('otpInput').addEventListener('input', function(e) {
                 e.target.value = e.target.value.replace(/[^0-9]/g, '');
             });
+
+            const otpForm = document.getElementById('otpVerificationForm');
+            if (otpForm) {
+                otpForm.addEventListener('submit', handleOTPVerification);
+            }
 
             // Start resend countdown on open
             startOtpResendCountdown(30);
@@ -1186,29 +1194,43 @@
             }, 1000);
         }
 
+        function persistFixerAuthSession(fixerData, token, persist = 'local') {
+            if (window.stateService && typeof window.stateService.setAuthenticatedUser === 'function') {
+                window.stateService.setAuthenticatedUser(fixerData, token, 'fixer', persist);
+            } else {
+                const storage = persist === 'session' ? sessionStorage : localStorage;
+                storage.setItem('fixghar_persist', persist);
+                storage.setItem('fixghar_token', token);
+                storage.setItem('fixghar_user_data', JSON.stringify(fixerData));
+                storage.setItem('fixghar_user_type', 'fixer');
+            }
+            localStorage.setItem('userName', fixerData?.name || 'Fixer');
+        }
+
         // OTP Verification Handler
         async function handleOTPVerification(event) {
             event.preventDefault();
             
+            const modal = document.getElementById('otpVerificationModal');
             const otp = document.getElementById('otpInput').value;
-            const phone = document.getElementById('otpPhoneValue')?.textContent || '';
-            const userType = document.querySelector('#otpVerificationForm button[onclick*="resendOTP"]')
-                ?.onclick
-                ?.toString()
-                ?.match(/'([^']+)'/)?.[1];
+            const phone = modal?.dataset.phone || document.getElementById('otpPhoneValue')?.textContent || '';
+            const userType = modal?.dataset.userType || 'fixer';
             
             if (otp.length !== 6) {
-                alert('Please enter a valid 6-digit OTP');
+                showModernAlert('Invalid OTP', 'Please enter a valid 6-digit OTP.', 'error');
                 return;
             }
             
+            const verifyBtn = document.getElementById('otpVerifyBtn');
+            const spinner = verifyBtn?.querySelector('.otp-premium-spinner');
+            const icon = verifyBtn?.querySelector('.otp-premium-btn-icon');
+            const btnText = verifyBtn?.querySelector('.otp-premium-btn-text');
+
             try {
-                const verifyBtn = document.getElementById('otpVerifyBtn');
-                const spinner = verifyBtn?.querySelector('.otp-premium-spinner');
-                const icon = verifyBtn?.querySelector('.otp-premium-btn-icon');
                 if (verifyBtn) verifyBtn.disabled = true;
                 if (spinner) spinner.style.display = 'inline-block';
                 if (icon) icon.style.display = 'none';
+                if (btnText) btnText.textContent = 'Verifying...';
 
                 const apiService = new FIXGHARApiService();
                 const response = await apiService.verifyOTP({
@@ -1218,13 +1240,35 @@
                 });
                 
                 if (response.success) {
-                    // Close OTP modal
                     closeOTPModal();
-                    
-                    // Show success message
-                    alert('Phone verified successfully! You can now login.');
-                    
-                    // Switch to login tab
+
+                    if (userType === 'fixer') {
+                        const token = response?.data?.token;
+                        const fixerData = response?.data?.fixer;
+                        const redirectUrl = response?.data?.redirectUrl || 'pages/fixer-dashboard.html';
+                        const authStatus = response?.data?.authStatus;
+
+                        if (token && fixerData && authStatus === 'authenticated') {
+                            persistFixerAuthSession(fixerData, token, 'local');
+
+                            showModernAlert(
+                                'Registration successful!',
+                                'Redirecting to dashboard...',
+                                'success'
+                            );
+
+                            setTimeout(() => {
+                                window.location.href = redirectUrl;
+                            }, 1000);
+                            return;
+                        }
+                    }
+
+                    showModernAlert(
+                        'Phone verified',
+                        response.message || 'You can now login.',
+                        'success'
+                    );
                     switchToLoginTab();
                 } else {
                     showModernAlert('OTP verification failed', response.message || 'Invalid OTP', 'error');
@@ -1233,11 +1277,9 @@
                 console.error('OTP verification error:', error);
                 showOtpApiError(error, 'OTP verification failed');
             } finally {
-                const verifyBtn = document.getElementById('otpVerifyBtn');
-                const spinner = verifyBtn?.querySelector('.otp-premium-spinner');
-                const icon = verifyBtn?.querySelector('.otp-premium-btn-icon');
                 if (spinner) spinner.style.display = 'none';
                 if (icon) icon.style.display = '';
+                if (btnText) btnText.textContent = 'Verify phone';
                 if (verifyBtn) verifyBtn.disabled = false;
             }
         }
@@ -1751,6 +1793,18 @@
                 if (window.innerWidth > 768) closeMenu();
             });
         })();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('login') === 'fixer') {
+                const fixerRole = document.getElementById('loginFixerRole');
+                if (fixerRole) fixerRole.checked = true;
+                if (typeof openLoginModal === 'function') {
+                    openLoginModal();
+                }
+            }
+        });
     </script>
 </body>
 </html>

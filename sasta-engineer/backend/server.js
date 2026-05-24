@@ -3,7 +3,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, 'config.env') });
 require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
 
-const { logMsg91StartupValidation } = require('./src/config/msg91');
+const { logMsg91StartupValidation, warnMsg91BalanceIfLow } = require('./src/config/msg91');
 
 logMsg91StartupValidation();
 
@@ -34,6 +34,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     try {
         await connectDB();
+        await warnMsg91BalanceIfLow();
         startPresenceJanitor();
 
         const server = app.listen(PORT, '0.0.0.0', () => {
