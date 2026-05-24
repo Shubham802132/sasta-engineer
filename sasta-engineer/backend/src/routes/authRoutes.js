@@ -12,7 +12,7 @@ const {
     getMe
 } = require('../controllers/authController');
 const { protect, optionalAuth } = require('../middleware/auth');
-const { loginRateLimit } = require('../middleware/security');
+const { loginRateLimit, otpRateLimit } = require('../middleware/security');
 
 const router = express.Router();
 
@@ -97,20 +97,20 @@ const resendOtpValidation = [
 ];
 
 // Production routes
-router.post('/user/signup', userRegistrationValidation, registerUser);
-router.post('/fixer/signup', fixerRegistrationValidation, registerFixer);
-router.post('/fixer/register', fixerRegistrationValidation, registerFixer);
+router.post('/user/signup', otpRateLimit, userRegistrationValidation, registerUser);
+router.post('/fixer/signup', otpRateLimit, fixerRegistrationValidation, registerFixer);
+router.post('/fixer/register', otpRateLimit, fixerRegistrationValidation, registerFixer);
 router.post('/login', loginRateLimit, loginValidation, login);
 router.post('/fixer/login', loginRateLimit, loginValidation, loginFixer);
 router.post('/logout', optionalAuth, logout);
 router.get('/me', protect, getMe);
 
 // Legacy aliases (keep existing frontend working during migration)
-router.post('/register/user', userRegistrationValidation, registerUser);
-router.post('/register/fixer', fixerRegistrationValidation, registerFixer);
+router.post('/register/user', otpRateLimit, userRegistrationValidation, registerUser);
+router.post('/register/fixer', otpRateLimit, fixerRegistrationValidation, registerFixer);
 router.post('/login/user', loginRateLimit, loginValidation, loginUser);
 router.post('/login/fixer', loginRateLimit, loginValidation, loginFixer);
-router.post('/verify-otp', otpValidation, verifyOTP);
-router.post('/resend-otp', resendOtpValidation, resendOTP);
+router.post('/verify-otp', otpRateLimit, otpValidation, verifyOTP);
+router.post('/resend-otp', otpRateLimit, resendOtpValidation, resendOTP);
 
 module.exports = router;

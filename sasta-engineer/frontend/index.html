@@ -716,26 +716,32 @@
                 showModernAlert(registrationTitle || 'Registration', serverMessage || 'Success.', 'success');
                 return;
             }
-            if (otpDelivery.status === 'sent') {
+            if (otpDelivery.deliveredToHandset === true || otpDelivery.status === 'sent') {
                 showModernAlert(
                     'OTP sent successfully',
-                    'Check your phone for the verification code.',
+                    'Check your phone for the verification code (SMS may take up to a minute).',
                     'success'
                 );
                 return;
             }
             if (otpDelivery.status === 'test_mode') {
-                showModernAlert('SMS test mode', serverMessage, 'info');
+                const devHint =
+                    serverMessage +
+                    (otpDelivery.detail ? `\n\n${otpDelivery.detail}` : '') +
+                    '\n\nIn development, the OTP may be shown in the browser console or API response.';
+                showModernAlert('SMS test mode (no SMS to phone)', devHint, 'info');
                 return;
             }
             if (
                 otpDelivery.code === 'SMS_PROVIDER_ERROR' ||
-                otpDelivery.code === 'SMS_NOT_CONFIGURED'
+                otpDelivery.code === 'SMS_NOT_CONFIGURED' ||
+                otpDelivery.code === 'MSG91_TEMPLATE_MISSING' ||
+                otpDelivery.code === 'SMS_TEST_MODE_PRODUCTION'
             ) {
-                showModernAlert('SMS provider error', serverMessage, 'error');
+                showModernAlert('SMS not delivered', serverMessage || otpDelivery.detail || 'Configure SMS on the server.', 'error');
                 return;
             }
-            showModernAlert('OTP issue', serverMessage, 'error');
+            showModernAlert('OTP issue', serverMessage || otpDelivery.detail || 'Could not send OTP.', 'error');
         }
 
         // Override default alert
@@ -1449,6 +1455,9 @@
                 
                 if (response.success) {
                     console.log('✅ Fixer registration successful:', response);
+                    if (response.data?.otp) {
+                        console.log('🧪 [dev] Fixer signup OTP (test mode):', response.data.otp);
+                    }
                     
                     showSignupOtpFeedback(
                         response.message,

@@ -119,9 +119,6 @@ class SMSService {
         if (msg91Configured && !process.env.MSG91_TEMPLATE_ID && !msg91FlowConfigured) {
             missing.push('MSG91_TEMPLATE_ID or MSG91_FLOW_ID');
         }
-        if (process.env.SMS_TEST_MODE !== 'true' && process.env.SMS_TEST_MODE !== 'false') {
-            missing.push('SMS_TEST_MODE');
-        }
 
         let provider = null;
         if (smsTestMode) provider = 'test';
@@ -207,7 +204,7 @@ class SMSService {
         };
     }
 
-    async sendViaMsg91(mobile10, otp, smsMessage) {
+    async sendViaMsg91(mobile91, otp) {
         const authKey = process.env.MSG91_AUTH_KEY;
         if (isPlaceholderAuthKey(authKey)) {
             return { attempted: false, reason: 'MSG91_AUTH_KEY not configured or is placeholder' };
@@ -215,69 +212,67 @@ class SMSService {
 
         const templateId = process.env.MSG91_TEMPLATE_ID;
         if (!templateId) {
-            console.warn(
-                '⚠️ [MSG91] MSG91_TEMPLATE_ID is not set. Many MSG91 India accounts require a DLT-mapped template to deliver OTP.'
-            );
+            return {
+                attempted: true,
+                ok: false,
+                provider: 'msg91',
+                code: 'MSG91_TEMPLATE_MISSING',
+                message:
+                    'MSG91_TEMPLATE_ID is required for OTP SMS in India (DLT-approved template). Add it in Render env vars.'
+            };
         }
 
-        const payload = {
-            authkey: authKey,
-            // MSG91 expects countrycode + mobile without "+" (India: 91XXXXXXXXXX)
-            mobile: mobile10,
-            otp,
-            otp_expiry: 10,
-            template_id: templateId || undefined
-        };
-
-        // MSG91 accepts optional message / sender depending on account — keep minimal OTP flow
-        console.log('📤 [MSG91] POST', this.msg91BaseUrl, {
-            mobile: mobile10,
-            otp: '[redacted]',
-            template_id: payload.template_id || '[default]'
+        const params = new URLSearchParams({
+            template_id: templateId,
+            mobile: String(mobile91),
+            otp: String(otp),
+            otp_length: '6',
+            otp_expiry: '10'
         });
+        const url = `${this.msg91BaseUrl}?${params.toString()}`;
 
-        const response = await axios.post(this.msg91BaseUrl, payload, {
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                authkey: authKey
-            },
-            timeout: 25000,
-            validateStatus: () => true
-        });
+        console.log('📤 [MSG91] POST', url.replace(String(otp), '[redacted]'));
+
+        const response = await axios.post(
+            url,
+            {},
+            {
+                headers: {
+                    authkey: authKey,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                timeout: 25000,
+                validateStatus: () => true
+            }
+        );
 
         console.log('📥 [MSG91] HTTP status:', response.status);
-        console.log('MSG91 RESPONSE:', response.data);
-        console.log('📥 [MSG91] Body:', JSON.stringify(response.data || {}, null, 2));
+        console.log('📥 [MSG91] Response:', JSON.stringify(response.data || {}, null, 2));
 
         const data = response.data || {};
         const httpOk = response.status >= 200 && response.status < 300;
-        const hasReqId = !!data.request_id;
         const typeOk = String(data.type || '').toLowerCase() === 'success';
-        const msgOk =
-            typeof data.message === 'string' &&
-            data.message.toLowerCase().includes('otp') &&
-            data.message.toLowerCase().includes('generated');
-        const ok = httpOk && (typeOk || msgOk) && (hasReqId || msgOk);
+        const hasReqId = !!data.request_id;
 
-        if (ok) {
-            if (!hasReqId) {
-                console.warn(
-                    '⚠️ [MSG91] Success response without request_id. Delivery may still fail if template/DLT is not configured.'
-                );
-            }
+        if (httpOk && typeOk && hasReqId) {
             return {
                 ok: true,
                 provider: 'msg91',
                 requestId: data.request_id,
+                providerMessage: data.message,
                 raw: data
             };
         }
 
+        const providerMessage = data.message || data.error || `MSG91 HTTP ${response.status}`;
+        console.error('❌ [MSG91] Delivery failed:', providerMessage, data);
+
         return {
             ok: false,
             provider: 'msg91',
-            message: data.message || data.error || `MSG91 HTTP ${response.status}`,
+            code: 'SMS_PROVIDER_ERROR',
+            message: providerMessage,
             detail: data
         };
     }
@@ -382,12 +377,27 @@ class SMSService {
                 '🧪 [OTP SMS] SMS_TEST_MODE=true — no SMS sent to phone. Set SMS_TEST_MODE=false and configure Twilio or MSG91.'
             );
             console.log('🧪 [OTP SMS] Would send to:', e164, 'OTP:', otp);
+            if (env === 'production') {
+                return {
+                    success: false,
+                    code: 'SMS_TEST_MODE_PRODUCTION',
+                    message:
+                        'SMS_TEST_MODE is enabled on the server. OTP was not sent to your phone. Set SMS_TEST_MODE=false and configure MSG91 (MSG91_AUTH_KEY + MSG91_TEMPLATE_ID) or Twilio on Render.',
+                    provider: 'test',
+                    testMode: true,
+                    deliveredToHandset: false,
+                    deliveryStatus: 'test_mode_blocked',
+                    phoneE164: e164
+                };
+            }
             return {
                 success: true,
                 code: 'TEST_MODE',
                 message: 'Test mode: SMS not sent to handset.',
                 provider: 'test',
                 testMode: true,
+                deliveredToHandset: false,
+                deliveryStatus: 'test_mode',
                 phoneE164: e164
             };
         }
@@ -407,6 +417,8 @@ class SMSService {
                         'Local dev fallback: SMS not sent because no provider keys are configured. Set SMS_TEST_MODE=true for local testing or configure Twilio/MSG91 for real delivery.',
                     provider: 'test',
                     testMode: true,
+                    deliveredToHandset: false,
+                    deliveryStatus: 'test_mode_auto',
                     phoneE164: e164,
                     missingEnv: status.missing
                 };
@@ -416,9 +428,28 @@ class SMSService {
                 success: false,
                 code: 'SMS_NOT_CONFIGURED',
                 message:
-                    `SMS could not be sent: missing ${status.missing.join(', ')}. Configure Twilio (TWILIO_*) or MSG91 (MSG91_AUTH_KEY), set SMS_TEST_MODE=false, and restart the server.`,
+                    `SMS could not be sent: missing ${status.missing.join(', ')}. Configure Twilio (TWILIO_*) or MSG91 (MSG91_AUTH_KEY + MSG91_TEMPLATE_ID), set SMS_TEST_MODE=false, and restart the server.`,
+                deliveredToHandset: false,
+                deliveryStatus: 'not_configured',
                 phoneE164: e164,
                 missingEnv: status.missing
+            };
+        }
+
+        if (
+            env === 'production' &&
+            status.msg91Configured &&
+            !status.msg91FlowConfigured &&
+            !process.env.MSG91_TEMPLATE_ID
+        ) {
+            return {
+                success: false,
+                code: 'MSG91_TEMPLATE_MISSING',
+                message:
+                    'MSG91_TEMPLATE_ID is not set on the server. OTP cannot be delivered without a DLT-approved template ID.',
+                deliveredToHandset: false,
+                deliveryStatus: 'failed',
+                phoneE164: e164
             };
         }
 
@@ -431,15 +462,18 @@ class SMSService {
             if (tw.attempted === false) {
                 console.log('ℹ️ [OTP SMS] Twilio skipped:', tw.reason);
             } else if (tw.ok) {
-                console.log('✅ [OTP SMS] Sent via Twilio', tw.messageSid);
+                console.log('✅ [OTP SMS] Sent via Twilio', tw.messageSid, 'status:', tw.status);
                 return {
                     success: true,
                     provider: 'twilio',
                     messageSid: tw.messageSid,
+                    deliveredToHandset: true,
+                    deliveryStatus: 'sent',
+                    providerMessage: tw.status,
                     phoneE164: e164
                 };
             } else {
-                console.error('❌ [OTP SMS] Twilio failed:', tw.message, tw.detail);
+                console.error('❌ [OTP SMS] Twilio failed:', tw.message, tw.code, tw.detail);
                 // fall through to MSG91
             }
         } catch (err) {
@@ -458,26 +492,32 @@ class SMSService {
             // Prefer FLOW API if MSG91_FLOW_ID is provided
             const m = status.msg91FlowConfigured
                 ? await this.sendViaMsg91Flow(mobile91, otp)
-                : await this.sendViaMsg91(mobile91, otp, smsMessage);
+                : await this.sendViaMsg91(mobile91, otp);
 
             if (m.attempted === false) {
                 console.log('ℹ️ [OTP SMS] MSG91 skipped:', m.reason);
             } else if (m.ok) {
-                console.log('✅ [OTP SMS] Sent via MSG91');
+                console.log('✅ [OTP SMS] Sent via MSG91 request_id:', m.requestId || m.messageId);
                 return {
                     success: true,
                     provider: m.provider || 'msg91',
+                    deliveredToHandset: true,
+                    deliveryStatus: 'sent',
+                    providerMessage: m.providerMessage || 'accepted',
                     phoneE164: e164,
                     requestId: m.requestId,
                     messageId: m.messageId
                 };
             } else {
-                console.error('❌ [OTP SMS] MSG91 failed:', m.message, m.detail);
+                console.error('❌ [OTP SMS] MSG91 failed:', m.message, m.code, m.detail);
                 return {
                     success: false,
-                    code: 'SMS_PROVIDER_ERROR',
+                    code: m.code || 'SMS_PROVIDER_ERROR',
                     message: m.message || 'SMS provider (MSG91) rejected the request.',
-                    phoneE164: e164
+                    deliveredToHandset: false,
+                    deliveryStatus: 'failed',
+                    phoneE164: e164,
+                    providerResponse: m.detail
                 };
             }
         } catch (err) {
@@ -490,10 +530,27 @@ class SMSService {
         console.error('❌ [OTP SMS] All configured providers failed.');
         return {
             success: false,
-            code: 'SMS_NOT_CONFIGURED',
+            code: 'SMS_PROVIDER_ERROR',
             message:
-                'SMS could not be sent. Configure Twilio (TWILIO_*) or MSG91 (MSG91_AUTH_KEY), set SMS_TEST_MODE=false, and restart the server.',
+                'SMS could not be delivered. Check Twilio trial verified numbers, MSG91 template/DLT/credits, and server logs.',
+            deliveredToHandset: false,
+            deliveryStatus: 'failed',
             phoneE164: e164
+        };
+    }
+
+    /** Non-secret SMS config summary for logs / health checks */
+    getDiagnostics() {
+        const status = this.getProviderStatus();
+        return {
+            nodeEnv: process.env.NODE_ENV || 'development',
+            smsTestMode: status.smsTestMode,
+            provider: status.provider,
+            twilioConfigured: status.twilioConfigured,
+            msg91Configured: status.msg91Configured,
+            msg91FlowConfigured: status.msg91FlowConfigured,
+            hasMsg91Template: !!process.env.MSG91_TEMPLATE_ID,
+            missingEnv: status.missing
         };
     }
 }

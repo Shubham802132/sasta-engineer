@@ -1,4 +1,14 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+
+function hashOtpCode(code) {
+    const secret = process.env.OTP_HASH_SECRET || process.env.JWT_SECRET || 'fixghar-otp-pepper';
+    return crypto.createHmac('sha256', secret).update(String(code).trim()).digest('hex');
+}
+
+function isOtpHash(value) {
+    return typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value);
+}
 
 const otpSchema = new mongoose.Schema({
     phone: {
@@ -7,8 +17,7 @@ const otpSchema = new mongoose.Schema({
     },
     otp: {
         type: String,
-        required: [true, 'OTP is required'],
-        length: 6
+        required: [true, 'OTP is required']
     },
     type: {
         type: String,
@@ -44,67 +53,64 @@ const otpSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for better query performance
 otpSchema.index({ phone: 1, type: 1 });
 otpSchema.index({ userId: 1, type: 1 });
 otpSchema.index({ expiresAt: 1 });
 otpSchema.index({ createdAt: 1 });
 
-// Method to check if OTP is expired
 otpSchema.methods.isExpired = function() {
     return new Date() > this.expiresAt;
 };
 
-// Method to check if OTP is valid
 otpSchema.methods.isValid = function() {
     return !this.isUsed && !this.isExpired() && this.attempts < 5;
 };
 
-// Method to mark OTP as used
 otpSchema.methods.markAsUsed = function() {
     this.isUsed = true;
     return this.save();
 };
 
-// Method to increment attempts
 otpSchema.methods.incrementAttempts = function() {
     this.attempts += 1;
     this.lastAttempt = new Date();
     return this.save();
 };
 
-// Method to generate new OTP
 otpSchema.methods.generateNewOTP = function() {
-    const crypto = require('crypto');
-    this.otp = crypto.randomInt(100000, 999999).toString();
-    this.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const plain = crypto.randomInt(100000, 999999).toString();
+    this.otp = hashOtpCode(plain);
+    this.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     this.attempts = 0;
     this.isUsed = false;
+    this._plainOtpForSms = plain;
     return this.save();
 };
 
-// Static method to create OTP
 otpSchema.statics.createOTP = function(phone, type, userType, userId) {
-    const crypto = require('crypto');
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    
-    return this.create({
+    const plain = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    const doc = this.create({
         phone,
-        otp,
+        otp: hashOtpCode(plain),
         type,
         userType,
         userId,
         expiresAt
     });
+
+    return doc.then((record) => {
+        record.otp = plain;
+        return record;
+    });
 };
 
-// Static method to create OTP with a pre-generated code (used when SMS must succeed before account creation)
 otpSchema.statics.createOTPWithCode = function(phone, otp, type, userType, userId) {
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     return this.create({
         phone,
-        otp,
+        otp: hashOtpCode(otp),
         type,
         userType,
         userId,
@@ -112,11 +118,10 @@ otpSchema.statics.createOTPWithCode = function(phone, otp, type, userType, userI
     });
 };
 
-// Static method to find valid OTP
 otpSchema.statics.findValidOTP = function(phone, otp, type) {
     return this.findOne({
         phone,
-        otp,
+        otp: hashOtpCode(otp),
         type,
         isUsed: false,
         expiresAt: { $gt: new Date() },
@@ -124,22 +129,20 @@ otpSchema.statics.findValidOTP = function(phone, otp, type) {
     });
 };
 
-// Static method to clean expired OTPs
 otpSchema.statics.cleanExpiredOTPs = function() {
     return this.deleteMany({
         expiresAt: { $lt: new Date() }
     });
 };
 
-// Pre-save middleware to ensure OTP is 6 digits
 otpSchema.pre('save', function(next) {
-    if (this.otp && this.otp.length !== 6) {
-        return next(new Error('OTP must be exactly 6 digits'));
+    if (this.isModified('otp') && this.otp && !isOtpHash(this.otp)) {
+        if (String(this.otp).length !== 6) {
+            return next(new Error('OTP must be exactly 6 digits'));
+        }
+        this.otp = hashOtpCode(this.otp);
     }
     return next();
 });
 
 module.exports = mongoose.model('OTP', otpSchema);
-
-
-

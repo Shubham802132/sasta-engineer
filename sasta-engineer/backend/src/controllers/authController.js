@@ -82,6 +82,36 @@ function ensureAuthPrereqs(res) {
     return true;
 }
 
+function buildOtpDelivery(smsResult) {
+    const deliveredToHandset = !!(
+        smsResult?.success &&
+        smsResult?.deliveredToHandset !== false &&
+        !smsResult?.testMode
+    );
+    let status = 'failed';
+    if (smsResult?.testMode) status = 'test_mode';
+    else if (deliveredToHandset) status = 'sent';
+
+    return {
+        status,
+        deliveredToHandset,
+        provider: smsResult?.provider || null,
+        code: smsResult?.code || null,
+        detail: smsResult?.message || null,
+        testMode: !!smsResult?.testMode,
+        deliveryStatus: smsResult?.deliveryStatus || status,
+        providerMessage: smsResult?.providerMessage || null,
+        missingEnv: smsResult?.missingEnv
+    };
+}
+
+function shouldRejectOtpSms(smsResult) {
+    if (!smsResult?.success) return true;
+    if (smsResult.testMode) return process.env.NODE_ENV === 'production';
+    if (smsResult.deliveredToHandset === false) return true;
+    return false;
+}
+
 /** User schema requires username; frontend may omit it — generate a unique handle from email. */
 async function generateUniqueUsernameForUser(normalizedEmail) {
     const localRaw = (normalizedEmail || '').split('@')[0] || 'user';
@@ -393,16 +423,16 @@ const registerUser = async (req, res) => {
         );
 
         const smsResult = await smsService.sendOTP(phoneForSave, otpCode, 'user');
-        const otpDelivery = {
-            status: smsResult.success ? 'sent' : 'failed',
-            provider: smsResult.provider || null,
-            code: smsResult.code || null,
-            detail: smsResult.message || null,
-            testMode: !!smsResult.testMode
-        };
-        if (smsResult.success && smsResult.testMode) otpDelivery.status = 'test_mode';
+        console.log('📲 [registerUser] SMS result:', {
+            success: smsResult.success,
+            code: smsResult.code,
+            provider: smsResult.provider,
+            deliveredToHandset: smsResult.deliveredToHandset,
+            deliveryStatus: smsResult.deliveryStatus
+        });
+        const otpDelivery = buildOtpDelivery(smsResult);
 
-        if (!smsResult.success) {
+        if (shouldRejectOtpSms(smsResult)) {
             await PendingRegistration.deleteOne({ _id: pending._id });
             return res.status(502).json({
                 success: false,
@@ -644,22 +674,22 @@ const registerFixer = async (req, res) => {
         );
 
         const smsResult = await smsService.sendOTP(phoneForSave, otpCode, 'fixer');
-        const otpDelivery = {
-            status: smsResult.success ? 'sent' : 'failed',
-            provider: smsResult.provider || null,
-            code: smsResult.code || null,
-            detail: smsResult.message || null,
-            testMode: !!smsResult.testMode
-        };
-        if (smsResult.success && smsResult.testMode) otpDelivery.status = 'test_mode';
+        console.log('📲 [registerFixer] SMS result:', {
+            success: smsResult.success,
+            code: smsResult.code,
+            provider: smsResult.provider,
+            deliveredToHandset: smsResult.deliveredToHandset,
+            deliveryStatus: smsResult.deliveryStatus
+        });
+        const otpDelivery = buildOtpDelivery(smsResult);
 
-        if (!smsResult.success) {
+        if (shouldRejectOtpSms(smsResult)) {
             await PendingRegistration.deleteOne({ _id: pending._id });
             return res.status(502).json({
                 success: false,
                 message:
                     smsResult.message ||
-                    'SMS could not be sent. Set SMS_TEST_MODE=true for testing or configure Twilio/MSG91.',
+                    'SMS could not be sent. Set SMS_TEST_MODE=false and configure MSG91 or Twilio on the server.',
                 code: smsResult.code || 'SMS_PROVIDER_ERROR',
                 otpDelivery
             });
@@ -985,7 +1015,8 @@ const verifyOTP = async (req, res) => {
         if (!otpRecord) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid or expired OTP'
+                message: 'Invalid or expired OTP',
+                code: 'OTP_INVALID_OR_EXPIRED'
             });
         }
 
@@ -1180,27 +1211,39 @@ const resendOTP = async (req, res) => {
         );
 
         const smsResult = await smsService.sendOTP(phoneNorm.e164, otp.otp, userType);
-        console.log('📲 [resend OTP] SMS result:', smsResult);
+        console.log('📲 [resend OTP] SMS result:', {
+            success: smsResult.success,
+            code: smsResult.code,
+            provider: smsResult.provider,
+            deliveredToHandset: smsResult.deliveredToHandset,
+            deliveryStatus: smsResult.deliveryStatus
+        });
 
-        let message = 'New verification code sent successfully.';
-        if (smsResult.success && smsResult.testMode) {
-            message =
-                'OTP regenerated (SMS test mode — SMS not sent to phone). Set SMS_TEST_MODE=false and configure SMS provider.';
-        } else if (!smsResult.success) {
-            message =
-                smsResult.message ||
-                'Could not send SMS. Check Twilio/MSG91 configuration and server logs.';
+        const otpDelivery = buildOtpDelivery(smsResult);
+
+        if (shouldRejectOtpSms(smsResult)) {
             return res.status(502).json({
                 success: false,
-                message,
-                code: smsResult.code || 'SMS_PROVIDER_ERROR'
+                message:
+                    smsResult.message ||
+                    'Could not send SMS. Check Twilio/MSG91 configuration and server logs.',
+                code: smsResult.code || 'SMS_PROVIDER_ERROR',
+                otpDelivery
             });
         }
 
-        res.status(200).json({
-            success: true,
-            message
-        });
+        let message = 'New verification code sent successfully.';
+        if (otpDelivery.status === 'test_mode') {
+            message =
+                'OTP regenerated (SMS test mode — SMS not sent to phone). Use the OTP shown in API response (dev only) or configure SMS provider.';
+        }
+
+        const payload = { success: true, message, data: { otpDelivery } };
+        if (process.env.NODE_ENV !== 'production' && otpDelivery.status === 'test_mode') {
+            payload.data.otp = otp.otp;
+        }
+
+        res.status(200).json(payload);
 
     } catch (error) {
         console.error('Resend OTP error:', error);

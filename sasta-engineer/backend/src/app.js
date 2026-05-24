@@ -13,6 +13,7 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const onlineFixersRoutes = require('./routes/onlineFixersRoutes');
+const smsService = require('./utils/smsService');
 
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
@@ -50,7 +51,8 @@ app.get('/api/health', (req, res) => {
         message: healthy ? 'FIXGHAR API is running' : 'API up but database unavailable',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
-        database: dbStatus
+        database: dbStatus,
+        sms: smsService.getDiagnostics()
     });
 });
 

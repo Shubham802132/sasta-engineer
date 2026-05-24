@@ -151,9 +151,22 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 };
 
+const otpRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseInt(process.env.OTP_RATE_LIMIT_MAX, 10) || 5,
+    message: {
+        success: false,
+        message: 'Too many OTP requests. Please try again later.',
+        code: 'OTP_RATE_LIMIT'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 module.exports = {
     securityHeaders,
     loginRateLimit,
+    otpRateLimit,
     apiRateLimit,
     sanitizeData,
     requestLogger,
