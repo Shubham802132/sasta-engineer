@@ -710,7 +710,7 @@
             }, 5000);
         }
 
-        /** Clear signup OTP feedback from backend otpDelivery (does not change signup flow). */
+        /** OTP signup feedback — shows backend reason, never exposes OTP in UI. */
         function showSignupOtpFeedback(serverMessage, otpDelivery, registrationTitle) {
             if (!otpDelivery) {
                 showModernAlert(registrationTitle || 'Registration', serverMessage || 'Success.', 'success');
@@ -724,24 +724,47 @@
                 );
                 return;
             }
-            if (otpDelivery.status === 'test_mode') {
-                const devHint =
-                    serverMessage +
-                    (otpDelivery.detail ? `\n\n${otpDelivery.detail}` : '') +
-                    '\n\nIn development, the OTP may be shown in the browser console or API response.';
-                showModernAlert('SMS test mode (no SMS to phone)', devHint, 'info');
+            if (otpDelivery.pendingTemplateDev || otpDelivery.code === 'MSG91_TEMPLATE_PENDING') {
+                showModernAlert(
+                    'OTP template pending approval',
+                    serverMessage ||
+                        'DLT template is not approved yet. In development, check the backend server console for the OTP.',
+                    'info'
+                );
                 return;
             }
-            if (
-                otpDelivery.code === 'SMS_PROVIDER_ERROR' ||
-                otpDelivery.code === 'SMS_NOT_CONFIGURED' ||
-                otpDelivery.code === 'MSG91_TEMPLATE_MISSING' ||
-                otpDelivery.code === 'SMS_TEST_MODE_PRODUCTION'
-            ) {
-                showModernAlert('SMS not delivered', serverMessage || otpDelivery.detail || 'Configure SMS on the server.', 'error');
+            if (otpDelivery.status === 'test_mode') {
+                showModernAlert(
+                    'SMS test mode',
+                    (serverMessage || 'OTP was not sent to your phone.') +
+                        ' In development, check the backend server console for the OTP.',
+                    'info'
+                );
+                return;
+            }
+            const smsCodes = [
+                'SMS_PROVIDER_ERROR',
+                'SMS_NOT_CONFIGURED',
+                'MSG91_TEMPLATE_MISSING',
+                'MSG91_AUTH_KEY_MISSING',
+                'MSG91_SENDER_ID_MISSING',
+                'SMS_TEST_MODE_PRODUCTION'
+            ];
+            if (smsCodes.includes(otpDelivery.code)) {
+                showModernAlert(
+                    'Could not send OTP',
+                    serverMessage || otpDelivery.detail || 'Configure MSG91 in backend/.env and restart the server.',
+                    'error'
+                );
                 return;
             }
             showModernAlert('OTP issue', serverMessage || otpDelivery.detail || 'Could not send OTP.', 'error');
+        }
+
+        function showOtpApiError(error, fallbackTitle) {
+            const code = error?.code ? ` (${error.code})` : '';
+            const msg = error?.message || 'Request failed';
+            showModernAlert(fallbackTitle || 'OTP error', `${msg}${code}`, 'error');
         }
 
         // Override default alert
@@ -1204,11 +1227,11 @@
                     // Switch to login tab
                     switchToLoginTab();
                 } else {
-                    alert('OTP verification failed: ' + (response.message || 'Invalid OTP'));
+                    showModernAlert('OTP verification failed', response.message || 'Invalid OTP', 'error');
                 }
             } catch (error) {
                 console.error('OTP verification error:', error);
-                alert('OTP verification error: ' + error.message);
+                showOtpApiError(error, 'OTP verification failed');
             } finally {
                 const verifyBtn = document.getElementById('otpVerifyBtn');
                 const spinner = verifyBtn?.querySelector('.otp-premium-spinner');
@@ -1455,9 +1478,6 @@
                 
                 if (response.success) {
                     console.log('✅ Fixer registration successful:', response);
-                    if (response.data?.otp) {
-                        console.log('🧪 [dev] Fixer signup OTP (test mode):', response.data.otp);
-                    }
                     
                     showSignupOtpFeedback(
                         response.message,
@@ -1491,10 +1511,18 @@
                     showModernAlert('Validation failed', `${error.message}${field}`, 'error');
                 } else if (error.code === 'DUPLICATE_KEY') {
                     showModernAlert('Already registered', error.message, 'error');
-                } else if (error.code === 'SMS_PROVIDER_ERROR' || error.code === 'SMS_NOT_CONFIGURED') {
-                    showModernAlert('SMS provider error', error.message, 'error');
+                } else if (
+                    error.code === 'SMS_PROVIDER_ERROR' ||
+                    error.code === 'SMS_NOT_CONFIGURED' ||
+                    error.code === 'MSG91_TEMPLATE_MISSING' ||
+                    error.code === 'MSG91_TEMPLATE_PENDING' ||
+                    error.code === 'MSG91_AUTH_KEY_MISSING' ||
+                    error.code === 'MSG91_SENDER_ID_MISSING' ||
+                    error.code === 'SMS_TEST_MODE_PRODUCTION'
+                ) {
+                    showOtpApiError(error, 'Could not send OTP');
                 } else {
-                    showModernAlert('Fixer registration error', error.message, 'error');
+                    showOtpApiError(error, 'Fixer registration error');
                 }
             } finally {
                 const btn = document.querySelector('#fixerSignupForm button[type="submit"]');

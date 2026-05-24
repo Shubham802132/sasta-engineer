@@ -1,5 +1,12 @@
 const crypto = require('crypto');
 const axios = require('axios');
+const {
+    getMsg91Config,
+    validateMsg91Config,
+    validateMsg91ForOtpSend,
+    logDevOtpConsole,
+    isPlaceholderAuthKey
+} = require('../config/msg91');
 
 /**
  * Normalize Indian mobile numbers to E.164: +91XXXXXXXXXX
@@ -43,18 +50,6 @@ function maskSecret(value, keepStart = 4) {
     return `${value.slice(0, keepStart)}…`;
 }
 
-function isPlaceholderAuthKey(key) {
-    if (!key || typeof key !== 'string') return true;
-    const k = key.trim().toLowerCase();
-    return (
-        k === '' ||
-        k.includes('your_msg91') ||
-        k.includes('your_') ||
-        k.includes('_here') ||
-        k === 'your_msg91_auth_key_here'
-    );
-}
-
 function logSmsEnvOnce() {
     if (logSmsEnvOnce._done) return;
     logSmsEnvOnce._done = true;
@@ -63,6 +58,7 @@ function logSmsEnvOnce() {
     const token = process.env.TWILIO_AUTH_TOKEN;
     const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM;
     const msg91 = process.env.MSG91_AUTH_KEY;
+    const msg91Cfg = getMsg91Config();
     const env = process.env.NODE_ENV || 'development';
 
     console.log('📲 [SMS env] NODE_ENV:', env);
@@ -73,6 +69,9 @@ function logSmsEnvOnce() {
         from || '[not set] (trial: recipient must be verified in Twilio)'
     );
     console.log('📲 [SMS env] MSG91_AUTH_KEY:', isPlaceholderAuthKey(msg91) ? '[not set / placeholder]' : '[set]');
+    console.log('📲 [SMS env] MSG91_TEMPLATE_ID:', msg91Cfg.templateId || '[not set]');
+    console.log('📲 [SMS env] MSG91_SENDER_ID:', msg91Cfg.senderId || '[not set]');
+    console.log('📲 [SMS env] MSG91_ROUTE:', msg91Cfg.route || '[not set]');
     console.log(
         '📲 [SMS env] SMS_TEST_MODE:',
         process.env.SMS_TEST_MODE === 'true' ? 'true (no SMS sent to handset)' : 'false / unset'
@@ -83,8 +82,7 @@ function logSmsEnvOnce() {
 class SMSService {
     constructor() {
         logSmsEnvOnce();
-        this.msg91BaseUrl =
-            process.env.MSG91_OTP_URL || 'https://control.msg91.com/api/v5/otp';
+        this.msg91BaseUrl = getMsg91Config().otpUrl;
     }
 
     validateIndianPhoneE164(e164) {
@@ -102,23 +100,18 @@ class SMSService {
             process.env.TWILIO_PHONE_NUMBER ||
             process.env.TWILIO_FROM ||
             process.env.TWILIO_PHONE;
-        const msg91Key = process.env.MSG91_AUTH_KEY;
-        const msg91FlowId = process.env.MSG91_FLOW_ID;
+
+        const msg91Validation = validateMsg91Config();
+        const { cfg, authOk: msg91Configured, flowOk: msg91FlowConfigured, templatePending } =
+            msg91Validation;
 
         const twilioConfigured = !!(sid && token && fromNumber);
-        const msg91Configured = !isPlaceholderAuthKey(msg91Key);
-        const msg91FlowConfigured = msg91Configured && typeof msg91FlowId === 'string' && msg91FlowId.trim() !== '';
-        const smsTestMode = process.env.SMS_TEST_MODE === 'true';
+        const smsTestMode = cfg.smsTestMode;
 
-        const missing = [];
+        const missing = [...msg91Validation.missing];
         if (!sid) missing.push('TWILIO_ACCOUNT_SID');
         if (!token) missing.push('TWILIO_AUTH_TOKEN');
         if (!fromNumber) missing.push('TWILIO_PHONE_NUMBER');
-        if (isPlaceholderAuthKey(msg91Key)) missing.push('MSG91_AUTH_KEY');
-        // For MSG91 India delivery you typically need either TEMPLATE_ID (OTP API) or FLOW_ID (Flow API)
-        if (msg91Configured && !process.env.MSG91_TEMPLATE_ID && !msg91FlowConfigured) {
-            missing.push('MSG91_TEMPLATE_ID or MSG91_FLOW_ID');
-        }
 
         let provider = null;
         if (smsTestMode) provider = 'test';
@@ -130,8 +123,10 @@ class SMSService {
             twilioConfigured,
             msg91Configured,
             msg91FlowConfigured,
+            msg91TemplatePending: templatePending,
             smsTestMode,
-            missing
+            missing,
+            msg91: msg91Validation.diagnostics
         };
     }
 
@@ -205,40 +200,56 @@ class SMSService {
     }
 
     async sendViaMsg91(mobile91, otp) {
-        const authKey = process.env.MSG91_AUTH_KEY;
-        if (isPlaceholderAuthKey(authKey)) {
-            return { attempted: false, reason: 'MSG91_AUTH_KEY not configured or is placeholder' };
-        }
-
-        const templateId = process.env.MSG91_TEMPLATE_ID;
-        if (!templateId) {
+        const preCheck = validateMsg91ForOtpSend();
+        if (!preCheck.ok) {
             return {
                 attempted: true,
                 ok: false,
                 provider: 'msg91',
-                code: 'MSG91_TEMPLATE_MISSING',
-                message:
-                    'MSG91_TEMPLATE_ID is required for OTP SMS in India (DLT-approved template). Add it in Render env vars.'
+                code: preCheck.code,
+                message: preCheck.message
             };
         }
 
+        if (preCheck.pendingTemplateDev) {
+            logDevOtpConsole(otp, 'MSG91 template pending');
+            return {
+                attempted: true,
+                ok: true,
+                provider: 'msg91',
+                code: 'MSG91_TEMPLATE_PENDING',
+                message: preCheck.message,
+                pendingTemplateDev: true
+            };
+        }
+
+        const cfg = preCheck.cfg;
+
         const params = new URLSearchParams({
-            template_id: templateId,
+            template_id: cfg.templateId,
             mobile: String(mobile91),
             otp: String(otp),
             otp_length: '6',
-            otp_expiry: '10'
+            otp_expiry: '10',
+            sender: cfg.senderId,
+            route: cfg.route
         });
-        const url = `${this.msg91BaseUrl}?${params.toString()}`;
 
-        console.log('📤 [MSG91] POST', url.replace(String(otp), '[redacted]'));
+        const url = `${cfg.otpUrl}?${params.toString()}`;
+
+        console.log('📤 [MSG91] POST', url.replace(String(otp), '[redacted]'), {
+            sender: cfg.senderId,
+            route: cfg.route,
+            template_id: cfg.templateId,
+            mobile: mobile91
+        });
 
         const response = await axios.post(
             url,
             {},
             {
                 headers: {
-                    authkey: authKey,
+                    authkey: cfg.authKey,
                     'Content-Type': 'application/json',
                     Accept: 'application/json'
                 },
@@ -278,40 +289,36 @@ class SMSService {
     }
 
     async sendViaMsg91Flow(mobile91, otp) {
-        const authKey = process.env.MSG91_AUTH_KEY;
-        const flowId = process.env.MSG91_FLOW_ID;
-        if (isPlaceholderAuthKey(authKey)) {
+        const cfg = getMsg91Config();
+
+        if (isPlaceholderAuthKey(cfg.authKey)) {
             return { attempted: false, reason: 'MSG91_AUTH_KEY not configured or is placeholder' };
         }
-        if (!flowId) {
+        if (!cfg.flowId) {
             return { attempted: false, reason: 'MSG91_FLOW_ID not set' };
         }
 
-        const sender = process.env.MSG91_SENDER_ID || process.env.MSG91_SENDER || process.env.MSG91_SENDERID;
-        const varName = (process.env.MSG91_FLOW_OTP_VAR || 'VAR1').trim() || 'VAR1';
-
-        const url = process.env.MSG91_FLOW_URL || 'https://api.msg91.com/api/v5/flow/';
         const recipient = { mobiles: mobile91 };
-        recipient[varName] = otp;
+        recipient[cfg.flowOtpVar] = otp;
 
         const payload = {
-            flow_id: flowId,
-            sender: sender || undefined,
+            flow_id: cfg.flowId,
+            sender: cfg.senderId || undefined,
             recipients: [recipient]
         };
 
-        console.log('📤 [MSG91 FLOW] POST', url, {
-            flow_id: flowId,
-            sender: sender || '[not set]',
+        console.log('📤 [MSG91 FLOW] POST', cfg.flowUrl, {
+            flow_id: cfg.flowId,
+            sender: cfg.senderId || '[not set]',
             mobiles: mobile91,
-            otpVar: varName
+            otpVar: cfg.flowOtpVar
         });
 
-        const response = await axios.post(url, payload, {
+        const response = await axios.post(cfg.flowUrl, payload, {
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
-                authkey: authKey
+                authkey: cfg.authKey
             },
             timeout: 25000,
             validateStatus: () => true
@@ -440,13 +447,14 @@ class SMSService {
             env === 'production' &&
             status.msg91Configured &&
             !status.msg91FlowConfigured &&
-            !process.env.MSG91_TEMPLATE_ID
+            (status.msg91TemplatePending || !getMsg91Config().templateId)
         ) {
             return {
                 success: false,
-                code: 'MSG91_TEMPLATE_MISSING',
-                message:
-                    'MSG91_TEMPLATE_ID is not set on the server. OTP cannot be delivered without a DLT-approved template ID.',
+                code: status.msg91TemplatePending ? 'MSG91_TEMPLATE_PENDING' : 'MSG91_TEMPLATE_MISSING',
+                message: status.msg91TemplatePending
+                    ? 'MSG91 DLT template is pending approval. OTP cannot be sent until the template is approved.'
+                    : 'MSG91_TEMPLATE_ID is not set on the server. OTP cannot be delivered without a DLT-approved template ID.',
                 deliveredToHandset: false,
                 deliveryStatus: 'failed',
                 phoneE164: e164
@@ -483,13 +491,40 @@ class SMSService {
             }
         }
 
-        // 2) MSG91 (10-digit mobile without country code)
+        // 2) MSG91 — mobile format 91XXXXXXXXXX (no +)
         try {
             const digits10 = norm.digits10 || e164.replace(/^\+91/, '');
-            const mobile91 = `91${digits10}`; // required: 91XXXXXXXXXX (no '+')
+            const mobile91 = `91${digits10}`;
             console.log('📤 [MSG91] Mobile formatted (no +):', mobile91);
 
-            // Prefer FLOW API if MSG91_FLOW_ID is provided
+            if (status.msg91Configured && !status.twilioConfigured) {
+                const preCheck = validateMsg91ForOtpSend();
+                if (!preCheck.ok) {
+                    return {
+                        success: false,
+                        code: preCheck.code,
+                        message: preCheck.message,
+                        deliveredToHandset: false,
+                        deliveryStatus: 'failed',
+                        phoneE164: e164
+                    };
+                }
+                if (preCheck.pendingTemplateDev) {
+                    logDevOtpConsole(otp, 'MSG91 template pending');
+                    return {
+                        success: true,
+                        code: 'MSG91_TEMPLATE_PENDING',
+                        message: preCheck.message,
+                        provider: 'msg91',
+                        testMode: true,
+                        pendingTemplateDev: true,
+                        deliveredToHandset: false,
+                        deliveryStatus: 'template_pending_dev',
+                        phoneE164: e164
+                    };
+                }
+            }
+
             const m = status.msg91FlowConfigured
                 ? await this.sendViaMsg91Flow(mobile91, otp)
                 : await this.sendViaMsg91(mobile91, otp);
@@ -498,15 +533,20 @@ class SMSService {
                 console.log('ℹ️ [OTP SMS] MSG91 skipped:', m.reason);
             } else if (m.ok) {
                 console.log('✅ [OTP SMS] Sent via MSG91 request_id:', m.requestId || m.messageId);
+                const pendingDev = !!m.pendingTemplateDev;
                 return {
                     success: true,
                     provider: m.provider || 'msg91',
-                    deliveredToHandset: true,
-                    deliveryStatus: 'sent',
-                    providerMessage: m.providerMessage || 'accepted',
+                    deliveredToHandset: !pendingDev,
+                    deliveryStatus: pendingDev ? 'template_pending_dev' : 'sent',
+                    providerMessage: m.providerMessage || m.message || 'accepted',
+                    code: m.code,
+                    message: m.message,
                     phoneE164: e164,
                     requestId: m.requestId,
-                    messageId: m.messageId
+                    messageId: m.messageId,
+                    testMode: pendingDev,
+                    pendingTemplateDev: pendingDev
                 };
             } else {
                 console.error('❌ [OTP SMS] MSG91 failed:', m.message, m.code, m.detail);
@@ -542,6 +582,7 @@ class SMSService {
     /** Non-secret SMS config summary for logs / health checks */
     getDiagnostics() {
         const status = this.getProviderStatus();
+        const msg91Validation = validateMsg91Config();
         return {
             nodeEnv: process.env.NODE_ENV || 'development',
             smsTestMode: status.smsTestMode,
@@ -549,7 +590,7 @@ class SMSService {
             twilioConfigured: status.twilioConfigured,
             msg91Configured: status.msg91Configured,
             msg91FlowConfigured: status.msg91FlowConfigured,
-            hasMsg91Template: !!process.env.MSG91_TEMPLATE_ID,
+            msg91: msg91Validation.diagnostics,
             missingEnv: status.missing
         };
     }

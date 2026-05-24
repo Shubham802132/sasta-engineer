@@ -5,6 +5,7 @@ const PendingRegistration = require('../models/pendingRegistration');
 const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const smsService = require('../utils/smsService');
+const { logDevOtpConsole, isDevEnvironment } = require('../config/msg91');
 const { setFixerOnline, setFixerOffline } = require('../utils/presenceService');
 
 function normalizeEmail(email) {
@@ -83,13 +84,16 @@ function ensureAuthPrereqs(res) {
 }
 
 function buildOtpDelivery(smsResult) {
+    const pendingDev = !!smsResult?.pendingTemplateDev;
     const deliveredToHandset = !!(
         smsResult?.success &&
         smsResult?.deliveredToHandset !== false &&
-        !smsResult?.testMode
+        !smsResult?.testMode &&
+        !pendingDev
     );
     let status = 'failed';
-    if (smsResult?.testMode) status = 'test_mode';
+    if (pendingDev) status = 'template_pending_dev';
+    else if (smsResult?.testMode) status = 'test_mode';
     else if (deliveredToHandset) status = 'sent';
 
     return {
@@ -99,6 +103,7 @@ function buildOtpDelivery(smsResult) {
         code: smsResult?.code || null,
         detail: smsResult?.message || null,
         testMode: !!smsResult?.testMode,
+        pendingTemplateDev: pendingDev,
         deliveryStatus: smsResult?.deliveryStatus || status,
         providerMessage: smsResult?.providerMessage || null,
         missingEnv: smsResult?.missingEnv
@@ -107,9 +112,27 @@ function buildOtpDelivery(smsResult) {
 
 function shouldRejectOtpSms(smsResult) {
     if (!smsResult?.success) return true;
+    if (smsResult.pendingTemplateDev) return false;
     if (smsResult.testMode) return process.env.NODE_ENV === 'production';
     if (smsResult.deliveredToHandset === false) return true;
     return false;
+}
+
+function buildOtpRegisterMessage(otpDelivery) {
+    if (otpDelivery.pendingTemplateDev) {
+        return 'OTP template is pending approval. Check server console for OTP in development, or wait for DLT approval.';
+    }
+    if (otpDelivery.status === 'test_mode') {
+        return 'OTP generated (test mode). Verify OTP to create your account.';
+    }
+    return 'OTP sent successfully — verify to create your account.';
+}
+
+function buildOtpRegisterResponseData(phone, otpDelivery) {
+    return {
+        phone,
+        otpDelivery
+    };
 }
 
 /** User schema requires username; frontend may omit it — generate a unique handle from email. */
@@ -442,7 +465,7 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const otpRecord = await OTP.createOTPWithCode(
+        await OTP.createOTPWithCode(
             phoneForSave,
             otpCode,
             'phone_verification',
@@ -450,23 +473,14 @@ const registerUser = async (req, res) => {
             pending._id
         );
 
-        let registerMessage = 'OTP sent successfully — verify to create your account.';
-        if (otpDelivery.status === 'test_mode') {
-            registerMessage = 'OTP generated (test mode). Verify OTP to create your account.';
-        }
-
-        const responseData = {
-            phone: phoneForSave,
-            otpDelivery
-        };
-        if (process.env.NODE_ENV !== 'production') {
-            responseData.otp = otpRecord.otp;
+        if (isDevEnvironment() && (otpDelivery.testMode || otpDelivery.pendingTemplateDev)) {
+            logDevOtpConsole(otpCode, 'registerUser');
         }
 
         return res.status(201).json({
             success: true,
-            message: registerMessage,
-            data: responseData
+            message: buildOtpRegisterMessage(otpDelivery),
+            data: buildOtpRegisterResponseData(phoneForSave, otpDelivery)
         });
 
     } catch (error) {
@@ -689,13 +703,13 @@ const registerFixer = async (req, res) => {
                 success: false,
                 message:
                     smsResult.message ||
-                    'SMS could not be sent. Set SMS_TEST_MODE=false and configure MSG91 or Twilio on the server.',
+                    'SMS could not be sent. Configure MSG91 in backend/.env and restart the server.',
                 code: smsResult.code || 'SMS_PROVIDER_ERROR',
                 otpDelivery
             });
         }
 
-        const otpRecord = await OTP.createOTPWithCode(
+        await OTP.createOTPWithCode(
             phoneForSave,
             otpCode,
             'phone_verification',
@@ -703,23 +717,14 @@ const registerFixer = async (req, res) => {
             pending._id
         );
 
-        let fixerMsg = 'OTP sent successfully — verify to create your account.';
-        if (otpDelivery.status === 'test_mode') {
-            fixerMsg = 'OTP generated (test mode). Verify OTP to create your account.';
-        }
-
-        const fixerResponseData = {
-            phone: phoneForSave,
-            otpDelivery
-        };
-        if (process.env.NODE_ENV !== 'production') {
-            fixerResponseData.otp = otpRecord.otp;
+        if (isDevEnvironment() && (otpDelivery.testMode || otpDelivery.pendingTemplateDev)) {
+            logDevOtpConsole(otpCode, 'registerFixer');
         }
 
         return res.status(201).json({
             success: true,
-            message: fixerMsg,
-            data: fixerResponseData
+            message: buildOtpRegisterMessage(otpDelivery),
+            data: buildOtpRegisterResponseData(phoneForSave, otpDelivery)
         });
     } catch (error) {
         return handleRegistrationError(error, res, 'Fixer registration');
@@ -1233,17 +1238,18 @@ const resendOTP = async (req, res) => {
         }
 
         let message = 'New verification code sent successfully.';
-        if (otpDelivery.status === 'test_mode') {
-            message =
-                'OTP regenerated (SMS test mode — SMS not sent to phone). Use the OTP shown in API response (dev only) or configure SMS provider.';
+        if (otpDelivery.status === 'test_mode' || otpDelivery.pendingTemplateDev) {
+            message = buildOtpRegisterMessage(otpDelivery);
+            if (isDevEnvironment()) {
+                logDevOtpConsole(otp.otp, 'resendOTP');
+            }
         }
 
-        const payload = { success: true, message, data: { otpDelivery } };
-        if (process.env.NODE_ENV !== 'production' && otpDelivery.status === 'test_mode') {
-            payload.data.otp = otp.otp;
-        }
-
-        res.status(200).json(payload);
+        res.status(200).json({
+            success: true,
+            message,
+            data: { otpDelivery }
+        });
 
     } catch (error) {
         console.error('Resend OTP error:', error);

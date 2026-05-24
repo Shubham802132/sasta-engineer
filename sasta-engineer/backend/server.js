@@ -1,7 +1,11 @@
 const path = require('path');
 
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-require('dotenv').config({ path: path.join(__dirname, 'config.env'), override: false });
+require('dotenv').config({ path: path.join(__dirname, 'config.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
+
+const { logMsg91StartupValidation } = require('./src/config/msg91');
+
+logMsg91StartupValidation();
 
 const app = require('./src/app');
 const connectDB = require('./src/config/database');
